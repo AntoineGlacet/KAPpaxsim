@@ -21,8 +21,8 @@ Project Organization
     ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
     │   └── figures        <- Generated graphics and figures to be used in reporting
     │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
+    ├── environement.yml   <- The requirements file for reproducing the analysis environment, e.g.
+    │                         generated with `conda export > environment.yml`
     │
     ├── setup.py           <- Makes project pip installable (pip install -e .) so src can be imported
     ├── src                <- Source code for use in this project.
@@ -41,6 +41,13 @@ Project Organization
     │   │   ├── KIX_T1d_CUSBD.py
     │   │   ├── KIX_T2a.py
     │   │   └── KIX_T2d.py
+
+Quick start guide
+------------
+1. clone the repo
+2. create a new conda environment from environment.yml
+3. install src (pip install -e . in conda terminal from KAPpaxsim)
+4. run the tutorial notebook (to be created)
 
 Remarks
 ------------
