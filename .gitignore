@@ -76,10 +76,7 @@ target/
 .ipynb_checkpoints/
 
 # exclude data from source control by default
-/data/interim/*
-/data/processed/*
-/data/raw/*
-/data/secret/*
+/data
 
 # keep data tree structure
 !/data/interim/.gitkeep 
