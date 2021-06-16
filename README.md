@@ -7,34 +7,38 @@ Project Organization
 ------------
 
     ├── LICENSE
-    ├── README.md          <- The top-level README for developers using this project.
+    ├── README.md              <- The top-level README for developers using this project.
     ├── data
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   ├── raw            <- The original, immutable data dump.
-    │   └── secret         <- Secret data like Sharepoint login
+    │   ├── interim            <- Intermediate data that has been transformed. (not uploaded to github) 
+    │   ├── processed          <- The final, canonical data sets for modeling. (not uploaded to github) 
+    │   ├── raw                <- The original, immutable data dump. (not uploaded to github) 
+    │   └── secret             <- Secret data like Sharepoint login (not uploaded to github) 
+    │       └── .env           <- File with local environment parameters
+    │                               and passwords. Please ask separately (not uploaded to github) 
     │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
+    ├── notebooks              <- Jupyter notebooks. Naming convention is a number (for ordering),
+    │                             the creator's initials, and a short `-` delimited description, e.g.
+    │                             `1.0-jqp-initial-data-exploration`.
     │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
+    ├── reports                <- Generated analysis as HTML, PDF, LaTeX, etc.
+    │   └── figures            <- Generated graphics and figures to be used in reporting
     │
-    ├── environement.yml   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `conda export > environment.yml`
+    ├── environement.yml       <- The requirements file for reproducing the analysis environment, e.g.
+    │                             generated with `conda export > environment.yml`
     │
-    ├── setup.py           <- Makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
+    ├── setup.py               <- Makes project pip installable (pip install -e .) so src can be imported
+    ├── src                    <- Source code for use in this project.
+    │   ├── __init__.py        <- Makes src a Python module
     │   │
-    │   ├── profiles.py    <- generates Pax & counters from schedule   
+    │   ├── utils              <- regroup utilities in a module  
+    │   │   ├── __init__.py    <- Makes utils python module
+    │   │   ├── graph.py       <- For uniform graphs
+    │   │   ├── helpers.py     <- Calculate stuff (eg.LBS)
+    │   │   ├── optimizers.py  <- Optimizers & callbacks
+    │   │   ├── sharepoint.py  <- download/upload data with sharepoint
     │   │
-    │   ├── utils.py       <- utilities (import schedules from Sharepoint, optimizers, callbacks
-    │   │                     an various support function)
-    │   │
-    │   ├── simfunc         <- Scripts to simulate a busy day
-    │   │   ├── __init__.py <- Makes simfunc a python module
+    │   ├── simfunc            <- Scripts to simulate a busy day
+    │   │   ├── __init__.py    <- Makes simfunc a python module
     │   │   ├── KIX_T1a.py
     │   │   ├── KIX_T1a_covid.py
     │   │   ├── KIX_T1d.py

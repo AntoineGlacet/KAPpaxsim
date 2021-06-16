@@ -7,11 +7,11 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from decouple import AutoConfig
 from matplotlib.ticker import FuncFormatter
 from scipy.interpolate import interp1d
 from scipy.stats import norm
 from tqdm import tqdm
-
 
 def show_up_function(
     target_peak=2900,
@@ -60,9 +60,11 @@ def show_up_function(
     # we also use the "airline code" sheet for show-up profiles!
     # move all to ADRM_parameters_full (new) file on sharepoint
     # and download to project folder
-    
-    path_forecasts = Path(__file__).parent / "../data/raw/FY2019_FY2025 merge.xlsx"
-    path_show_up = Path(__file__).parent / "../data/raw/show_up_profiles.xlsx"
+    # get env variables (for schedule and show-up files paths)
+    DOTENV_FILE_PATH = Path(__file__).parent / "../../data/secret/.env"
+    config = AutoConfig(search_path=DOTENV_FILE_PATH)
+    path_forecasts = config('FY2019_FY2025_xlsx_path')
+    path_show_up = config('ADRM_param_full_xlsx_path')   
 
     # if custom showup, assign the mean and STD
     if custom_showup == True:
