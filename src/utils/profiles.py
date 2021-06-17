@@ -63,8 +63,8 @@ def show_up_function(
     # get env variables (for schedule and show-up files paths)
     DOTENV_FILE_PATH = Path(__file__).parent / "../../data/secret/.env"
     config = AutoConfig(search_path=DOTENV_FILE_PATH)
-    path_forecasts = config('FY2019_FY2025_xlsx_path')
-    path_show_up = config('ADRM_param_full_xlsx_path')   
+    path_forecasts = Path(__file__).parent / ".."/ ".." / config('FY2019_FY2025_xlsx_path')
+    path_show_up = Path(__file__).parent / ".."/ ".." / config('ADRM_param_full_xlsx_path')  
 
     # if custom showup, assign the mean and STD
     if custom_showup == True:
