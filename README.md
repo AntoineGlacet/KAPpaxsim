@@ -52,7 +52,20 @@ Quick start guide
 1. clone the repo
 2. create a new conda environment from environment.yml
 3. install src (pip install -e . in conda terminal from KAPpaxsim)
-4. run the tutorial notebook (to be created)
+4. run the tutorial notebook
+
+Detailed start guide
+------------
+
+1. Install & start [Anaconda](https://www.anaconda.com/products/individual "Anaconda download") <-
+to install and manage python environments
+2. Download & unzip [source code](https://github.com/AntoineGlacet/KAPpaxsim/archive/refs/heads/main.zip "download code as a zip") in your project directory
+3. Install the conda env from template
+    1. locate environment.yml in root of downloaded code
+    2. open a conda command prompt and go to that directory (root)
+    3. execute `conda env create --name myenv --file environment.yml
+4. install src (pip install -e . in conda terminal from root)
+5. run the tutorial notebook /notebook/tutorial.ipynb
 
 Remarks
 ------------
