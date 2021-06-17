@@ -2,6 +2,7 @@ KAPpaxsim
 ==============================
 
 Simulation tools based on Simpy library applied to KAP terminal Pax flows
+let's test a fork
 
 Project Organization
 ------------
@@ -48,6 +49,7 @@ Project Organization
 
 Quick start guide
 ------------
+
 1. clone the repo
 2. create a new conda environment from environment.yml
 3. install src (pip install -e . in conda terminal from KAPpaxsim)
@@ -55,4 +57,5 @@ Quick start guide
 
 Remarks
 ------------
+
 Project under progress and regularly updated
