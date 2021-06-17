@@ -19,6 +19,7 @@ from tqdm import tqdm
 # it could even be displayed before starting the run
 # so let's see if it works
 
+
 def KIX_T1_covid_arrivals_v2(
     path,
     df_Pax,
@@ -755,15 +756,17 @@ def KIX_T1_covid_arrivals_v2(
             df_result["end_{}_queue".format(process)]
             - df_result["start_{}_queue".format(process)]
         ).fillna(datetime.timedelta(0))
-        
+
     # for process with start queue but no end queue, set waiting time at 8hrs
     # actually, the queue did not end during sim time so we set the result as high
     for process in list_process_all:
         mask = (pd.isna(df_result["end_{}_queue".format(process)])) & (
             pd.notna(df_result["start_{}_queue".format(process)])
         )
-        
-        df_result.loc[mask, "wait_time_{}".format(process)] = datetime.timedelta(hours=8)        
+
+        df_result.loc[mask, "wait_time_{}".format(process)] = datetime.timedelta(
+            hours=8
+        )
 
     # dct plot for graphs by list comprehension
     # they correspond to in/out/queue length/wait time
