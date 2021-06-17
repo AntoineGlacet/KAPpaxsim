@@ -1,5 +1,5 @@
 # KIX_T1d_CUSBD.py
-# includes: 
+# includes:
 # - KIX_T1_CUSBD_departure_sim_function
 # - univariate_cost_function_generator_t1d_CUSBD
 
@@ -16,6 +16,7 @@ import seaborn as sns
 import simpy
 from tqdm import tqdm
 
+
 def KIX_T1_CUSBD_departure_sim_function(
     path,
     df_Pax,
@@ -25,7 +26,7 @@ def KIX_T1_CUSBD_departure_sim_function(
     N_kiosk=92,
     Pt_kiosk=90,
     N_CUSBD=24,
-    CUSBD_opening_duration=60*3, # in minutes
+    CUSBD_opening_duration=60 * 3,  # in minutes
     N_security_lanes=16,
     Pt_security_lanes=14,
     N_emigration_counter=20,
@@ -53,8 +54,8 @@ def KIX_T1_CUSBD_departure_sim_function(
             dct_hist_wait_time,
             dct_hist_queue_length,
     """
-    random.seed(12) # for reproductibility and smooth optimization
-    
+    random.seed(12)  # for reproductibility and smooth optimization
+
     # DEBUG
     global df_result
     global dct_plot
@@ -135,7 +136,7 @@ def KIX_T1_CUSBD_departure_sim_function(
             ]
             self.Pt_checkin_1step_counter = Pt_checkin_1step_counter
             self.Pt_checkin_2step_counter = Pt_checkin_2step_counter
-            
+
             self.CUSBD = simpy.PriorityResource(env, N_CUSBD)
 
             self.kiosk = simpy.PriorityResource(env, N_kiosk)
@@ -160,7 +161,7 @@ def KIX_T1_CUSBD_departure_sim_function(
                 opened_counters = data.loc[
                     int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
                 ]
-                
+
         def wait_CUSBD_opening(self, Pax):
             """
             wait for CUSBD openned for that flight
@@ -170,9 +171,9 @@ def KIX_T1_CUSBD_departure_sim_function(
             """
             # get the opening time for the flight
             STD = df_result.loc[int(Pax.split("_")[1]), "STD"]
-            STD_to_minutes = STD.hour*60 + STD.minute
-            
-            opening_time = STD_to_minutes - CUSBD_opening_duration           
+            STD_to_minutes = STD.hour * 60 + STD.minute
+
+            opening_time = STD_to_minutes - CUSBD_opening_duration
 
             while env.now <= opening_time:
                 yield self.env.timeout(5)
@@ -233,7 +234,7 @@ def KIX_T1_CUSBD_departure_sim_function(
         def checkin_2step_kiosk(self, Pax):
             """ check-in at Kiosk """
             yield self.env.timeout(Pt_kiosk)
-            
+
         def checkin_2step_CUSBD(self, Pax):
             """ check-in at CUSBD """
             yield self.env.timeout(Pt_checkin_2step_counter)
@@ -250,7 +251,7 @@ def KIX_T1_CUSBD_departure_sim_function(
             """ emigration self check """
             yield self.env.timeout(Pt_emigration_self)
 
-    # ======================================= Passenger journey for each type of Pax=======================================
+    # ========================= Passenger journey for each type of Pax=================================
 
     def Pax_traditional(env, name, dep, STD, Flight_Number):
         """description"""
@@ -258,7 +259,6 @@ def KIX_T1_CUSBD_departure_sim_function(
         df_result.loc[int(name.split("_")[1]), "terminal_show_up"] = env.now
         df_result.loc[int(name.split("_")[1]), "STD"] = STD
         df_result.loc[int(name.split("_")[1]), "flight_number"] = Flight_Number
-        
 
         airline_code = name.split("_")[2].split()[0]
         index_airline = list_airlines.index(airline_code)
@@ -339,9 +339,7 @@ def KIX_T1_CUSBD_departure_sim_function(
             df_result.loc[index_Pax, "start_CUSBD_queue"] = env.now
 
         with dep.CUSBD.request(priority=2) as request:
-            df_result.loc[index_Pax, "CUSBD_queue_length"] = len(
-                dep.CUSBD.queue
-            )
+            df_result.loc[index_Pax, "CUSBD_queue_length"] = len(dep.CUSBD.queue)
             yield request
             df_result.loc[index_Pax, "end_CUSBD_queue"] = env.now
             yield env.process(dep.checkin_2step_CUSBD(name))
@@ -399,9 +397,7 @@ def KIX_T1_CUSBD_departure_sim_function(
             df_result.loc[index_Pax, "start_CUSBD_queue"] = env.now
 
         with dep.CUSBD.request(priority=2) as request:
-            df_result.loc[index_Pax, "CUSBD_queue_length"] = len(
-                dep.CUSBD.queue
-            )
+            df_result.loc[index_Pax, "CUSBD_queue_length"] = len(dep.CUSBD.queue)
             yield request
             df_result.loc[index_Pax, "end_CUSBD_queue"] = env.now
             yield env.process(dep.checkin_2step_CUSBD(name))
@@ -484,22 +480,25 @@ def KIX_T1_CUSBD_departure_sim_function(
     # ======================================= Passenger generator by flight =======================================
 
     def Pax_generator(env, departure, flight, df_Pax_flight, index_total):
-        
-        
+
         # get info from df_Pax_flight to be passed down to Pax
-        STD = df_Pax_flight.loc[0,"Scheduled Time"]
-        Flight_Number = df_Pax_flight.loc[0,"Flight Number"]
+        STD = df_Pax_flight.loc[0, "Scheduled Time"]
+        Flight_Number = df_Pax_flight.loc[0, "Flight Number"]
 
         # Create initial Pax of the flight
         # global index_vol
         index_vol = 0
         index_total = index_total + index_vol
         N_pax_flight = len(df_Pax_flight["minutes"])
-        
+
         yield env.timeout(df_Pax_flight["minutes"][index_vol])
         env.process(
             Pax_traditional(
-                env, "pax_{}_{}_traditional".format(index_total, flight), departure, STD, Flight_Number,
+                env,
+                "pax_{}_{}_traditional".format(index_total, flight),
+                departure,
+                STD,
+                Flight_Number,
             )
         )
 
@@ -586,7 +585,7 @@ def KIX_T1_CUSBD_departure_sim_function(
                         Flight_Number,
                     )
                 )
-                
+
     # Create dataframe of results
     dummy_list = [np.nan for i in df_Pax.index]
     list_checkpoints = [
@@ -676,8 +675,8 @@ def KIX_T1_CUSBD_departure_sim_function(
 
     else:
         env.run(until=1500)
-    
-# ======================================= Results formatting =======================================
+
+    # ======================================= Results formatting =======================================
 
     # Manipulate results dat
     # Change to datetinme
@@ -739,15 +738,13 @@ def KIX_T1_CUSBD_departure_sim_function(
         df_result["end_checkin_counter_queue"]
         - df_result["start_checkin_counter_queue"]
     ).fillna(datetime.timedelta(0))
-    
+
     df_result["wait_time_CUSBD_opening"] = (
-        df_result["start_CUSBD_queue"]
-        - df_result["start_wait_for_CUSBD_opening"]
+        df_result["start_CUSBD_queue"] - df_result["start_wait_for_CUSBD_opening"]
     ).fillna(datetime.timedelta(0))
 
     df_result["wait_time_CUSBD"] = (
-        df_result["end_CUSBD_queue"]
-        - df_result["start_CUSBD_queue"]
+        df_result["end_CUSBD_queue"] - df_result["start_CUSBD_queue"]
     ).fillna(datetime.timedelta(0))
 
     df_result["wait_time_security"] = (
@@ -763,15 +760,23 @@ def KIX_T1_CUSBD_departure_sim_function(
         df_result["end_emigration_self_queue"]
         - df_result["start_emigration_self_queue"]
     ).fillna(datetime.timedelta(0))
-    
+
     # for process with start queue but no end queue, set waiting time at 8hrs
     # actually, the queue did not end during sim time so we set the result as high
-    for process in ['checkin_kiosk','CUSBD','security','emigration_counter','emigration_self']:
+    for process in [
+        "checkin_kiosk",
+        "CUSBD",
+        "security",
+        "emigration_counter",
+        "emigration_self",
+    ]:
         mask = (pd.isna(df_result["end_{}_queue".format(process)])) & (
             pd.notna(df_result["start_{}_queue".format(process)])
         )
-        
-        df_result.loc[mask, "wait_time_{}".format(process)] = datetime.timedelta(hours=14)  
+
+        df_result.loc[mask, "wait_time_{}".format(process)] = datetime.timedelta(
+            hours=14
+        )
 
     # dct plot for graphs by list comprehension
     # they correspond to in/out/queue length/wait time
@@ -1013,7 +1018,7 @@ def KIX_T1_CUSBD_departure_sim_function(
         "N_kiosk": N_kiosk,
         "Pt_kiosk": Pt_kiosk,
         "N_CUSBD": N_CUSBD,
-        "CUSBD_opening_duration" : CUSBD_opening_duration,
+        "CUSBD_opening_duration": CUSBD_opening_duration,
         "N_security_lanes": N_security_lanes,
         "Pt_security_lanes": Pt_security_lanes,
         "N_emigration_counter": N_emigration_counter,
@@ -1076,6 +1081,7 @@ def KIX_T1_CUSBD_departure_sim_function(
         dct_hist_wait_time,
         dct_hist_queue_length,
     )
+
 
 def univariate_cost_function_generator_t1d_CUSBD_N(
     variable_string,  # eg. N_kiosk
