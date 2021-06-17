@@ -13,6 +13,7 @@ from scipy.interpolate import interp1d
 from scipy.stats import norm
 from tqdm import tqdm
 
+
 def show_up_function(
     target_peak=2900,
     direction="D",
@@ -35,7 +36,7 @@ def show_up_function(
     and the ratio if any.
 
     custom_showup then requires **kwargs to define the norm.cdf values
-    
+
     loc_FSC = kwargs["loc_FSC"]
     scale_FSC = kwargs["scale_FSC"]
     loc_LCC = kwargs["loc_LCC"]
@@ -44,9 +45,9 @@ def show_up_function(
     scale_CHINA = kwargs["scale_CHINA"]
     loc_EARLY = kwargs["loc_EARLY"]
     scale_EARLY = kwargs["scale_EARLY"]
-    
+
     custom_counter_rule then requires **kwargs to define custom rule
-    
+
     start_time = kwargs["start_time"]
     onecountertimer = kwargs["onecounter_time"]
     base_n_counter = kwargs["base_n_counter"]
@@ -55,7 +56,7 @@ def show_up_function(
     """
 
     # =============================== preparatory work for all peak hour extractions============================================
-    
+
     # give the paths to schedule forecast and show-up profiles
     # we also use the "airline code" sheet for show-up profiles!
     # move all to ADRM_parameters_full (new) file on sharepoint
@@ -63,8 +64,12 @@ def show_up_function(
     # get env variables (for schedule and show-up files paths)
     DOTENV_FILE_PATH = Path(__file__).parent / "../../data/secret/.env"
     config = AutoConfig(search_path=DOTENV_FILE_PATH)
-    path_forecasts = Path(__file__).parent / ".."/ ".." / config('FY2019_FY2025_xlsx_path')
-    path_show_up = Path(__file__).parent / ".."/ ".." / config('ADRM_param_full_xlsx_path')  
+    path_forecasts = (
+        Path(__file__).parent / ".." / ".." / config("FY2019_FY2025_xlsx_path")
+    )
+    path_show_up = (
+        Path(__file__).parent / ".." / ".." / config("ADRM_param_full_xlsx_path")
+    )
 
     # if custom showup, assign the mean and STD
     if custom_showup == True:
@@ -77,7 +82,7 @@ def show_up_function(
         loc_EARLY = kwargs["loc_EARLY"]
         scale_EARLY = kwargs["scale_EARLY"]
 
-    # import the schedule from the excel file produced by Aero department    
+    # import the schedule from the excel file produced by Aero department
     data = pd.read_excel(
         path_forecasts,
         sheet_name=r"IntlP_FY19-FY25",
@@ -185,22 +190,21 @@ def show_up_function(
         data["Airline Code"] = data["Flight Number"].str.split(" ", 1, expand=True)[0]
 
         # NEW
-        start_time = 2.5 # hours before STD for check-in opening
-        onecounter_time = 0.75 # hours before STD with only one counter
+        start_time = 2.5  # hours before STD for check-in opening
+        onecounter_time = 0.75  # hours before STD with only one counter
         base_n_counter = 4
         seats_per_add_counter = 60
-        
+
         # in case we change checkin counter allocation rule
         if custom_counter_rule == True:
             start_time = kwargs["start_time"]
             onecounter_time = kwargs["onecounter_time"]
-            base_n_counter  = kwargs["base_n_counter"]
+            base_n_counter = kwargs["base_n_counter"]
             seats_per_add_counter = kwargs["seats_per_add_counter"]
-            
-        onecounter_slot = -int(((onecounter_time)*60)//5)
-        start_slot = -int(((start_time)*60)//5)
 
-        
+        onecounter_slot = -int(((onecounter_time) * 60) // 5)
+        start_slot = -int(((start_time) * 60) // 5)
+
         # create a dictionnary of airline and seats per 5 minutes
         # initialize with all {airline_code : [0...0]}
         dico = {
@@ -274,7 +278,7 @@ def show_up_function(
         # valid on that period
         for col in range(len(df_Counters_3d.columns)):
             for i in range(len(df_Counters_3d.index)):
-                if 0 < df_Counters_3d.iloc[i, col]:  
+                if 0 < df_Counters_3d.iloc[i, col]:
                     df_Counters_3d.iloc[i, col] = max(
                         base_n_counter,
                         df_Counters_3d.iloc[i, col] // seats_per_add_counter,
@@ -714,10 +718,11 @@ def show_up_function(
         df_Pax = pd.DataFrame(dct_Pax)
         return list_time_Pax, df_Pax
 
+
 # use the function to generate Pax and counters
 def generate_dep_Pax_Counters(
     target_peak=3900,
-    terminal="T1", 
+    terminal="T1",
     custom_showup=False,
     custom_counter_rule=False,
     **kwargs,
@@ -764,13 +769,17 @@ def generate_dep_Pax_Counters(
                 if x >= 1:
                     x = 10
                 return x
+
             # specific allocation to T2: no more than 10 counters for each airline
             # and always 10 counters for peach (MM)
             df_Counters = df_Counters.applymap(lambda x: no_more_than_10(x))
             df_Counters["MM"] = df_Counters["MM"].apply(lambda x: if_open_10(x))
-            df_Counters["total"] = df_Counters.drop(labels=['total'],axis=1).sum(axis=1)
+            df_Counters["total"] = df_Counters.drop(labels=["total"], axis=1).sum(
+                axis=1
+            )
 
     return df_Pax, df_Counters
+
 
 # use the function to generate Pax and counters
 def generate_arr_Pax(target_peak=3900, terminal="T1", custom_showup=False, **kwargs):

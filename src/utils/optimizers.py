@@ -5,6 +5,7 @@
 
 from scipy.optimize import OptimizeResult
 
+
 def custmin(
     fun,
     guess=20,
