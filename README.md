@@ -2,7 +2,6 @@ KAPpaxsim
 ==============================
 
 Simulation tools based on Simpy library applied to KAP terminal Pax flows
-let's test a fork
 
 Project Organization
 ------------
