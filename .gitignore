@@ -79,10 +79,10 @@ target/
 /data
 
 # keep data tree structure
-!/data/interim/.gitkeep 
-!/data/processed/.gitkeep 
-!/data/raw/.gitkeep 
-!/data/secret/.gitkeep 
+!/data/interim/.gitkeep
+!/data/processed/.gitkeep
+!/data/raw/.gitkeep
+!/data/secret/.gitkeep
 
 # Mac OS-specific storage files
 .DS_Store

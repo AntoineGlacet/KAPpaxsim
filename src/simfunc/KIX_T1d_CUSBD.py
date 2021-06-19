@@ -101,12 +101,8 @@ def KIX_T1d_CUSBD(
         1 - modern_pax_ratio - digital_pax_ratio - premium_pax_ratio
     )
 
-    df_Pax["Flight Number"] = df_Pax["Flight Number"].replace(
-        ["JX821"], "JX 821"
-    )
-    df_Pax["Flight Number"] = df_Pax["Flight Number"].replace(
-        ["NS*****"], "NS *****"
-    )
+    df_Pax["Flight Number"] = df_Pax["Flight Number"].replace(["JX821"], "JX 821")
+    df_Pax["Flight Number"] = df_Pax["Flight Number"].replace(["NS*****"], "NS *****")
 
     df_Pax["airline"] = df_Pax["Flight Number"].apply(lambda x: x.split()[0])
     list_flight = df_Pax["Flight Number"].unique()
@@ -156,21 +152,14 @@ def KIX_T1d_CUSBD(
         ):
             self.env = env
             # dummy_machines with infinite capacity
-            self.dummy_machine = simpy.Resource(
-                env, 9999999999999999999999999
-            )
-            self.dummy_machine2 = simpy.Resource(
-                env, 9999999999999999999999999
-            )
-            self.dummy_machine3 = simpy.Resource(
-                env, 9999999999999999999999999
-            )
+            self.dummy_machine = simpy.Resource(env, 9999999999999999999999999)
+            self.dummy_machine2 = simpy.Resource(env, 9999999999999999999999999)
+            self.dummy_machine3 = simpy.Resource(env, 9999999999999999999999999)
 
             # define one check-in entity per airline
             # we will adapt processing time to represent the number of counters opened
             self.checkin = [
-                simpy.PriorityResource(env, 1)
-                for i in range(len(list_airlines))
+                simpy.PriorityResource(env, 1) for i in range(len(list_airlines))
             ]
             self.Pt_checkin_1step_counter = Pt_checkin_1step_counter
             self.Pt_checkin_2step_counter = Pt_checkin_2step_counter
@@ -180,14 +169,10 @@ def KIX_T1d_CUSBD(
             self.kiosk = simpy.PriorityResource(env, N_kiosk)
             self.Pt_kiosk = Pt_kiosk
 
-            self.security_lanes = simpy.PriorityResource(
-                env, N_security_lanes
-            )
+            self.security_lanes = simpy.PriorityResource(env, N_security_lanes)
             self.Pt_security_lanes = Pt_security_lanes
 
-            self.emigration_counter = simpy.Resource(
-                env, N_emigration_counter
-            )
+            self.emigration_counter = simpy.Resource(env, N_emigration_counter)
             self.Pt_emigration_counter = Pt_emigration_counter
 
             self.emigration_self = simpy.Resource(env, N_emigration_self)
@@ -300,9 +285,7 @@ def KIX_T1d_CUSBD(
         df_result.loc[int(name.split("_")[1]), "Pax_ID"] = name
         df_result.loc[int(name.split("_")[1]), "terminal_show_up"] = env.now
         df_result.loc[int(name.split("_")[1]), "STD"] = STD
-        df_result.loc[
-            int(name.split("_")[1]), "flight_number"
-        ] = Flight_Number
+        df_result.loc[int(name.split("_")[1]), "flight_number"] = Flight_Number
 
         airline_code = name.split("_")[2].split()[0]
         index_airline = list_airlines.index(airline_code)
@@ -314,9 +297,7 @@ def KIX_T1d_CUSBD(
                 index_Pax, "n_people_waiting_for_counter_opening"
             ] = dep.dummy_machine2.count
             yield request
-            df_result.loc[
-                index_Pax, "start_wait_for_counter_opening"
-            ] = env.now
+            df_result.loc[index_Pax, "start_wait_for_counter_opening"] = env.now
             yield env.process(dep.wait_opening(name))
             df_result.loc[index_Pax, "start_checkin_counter_queue"] = env.now
 
@@ -347,24 +328,18 @@ def KIX_T1d_CUSBD(
             df_result.loc[index_Pax, "emigration_counter_queue_length"] = len(
                 dep.emigration_counter.queue
             )
-            df_result.loc[
-                index_Pax, "start_emigration_counter_queue"
-            ] = env.now
+            df_result.loc[index_Pax, "start_emigration_counter_queue"] = env.now
             yield request
             df_result.loc[index_Pax, "end_emigration_counter_queue"] = env.now
             yield env.process(dep.emigration_counter_check(name))
-            df_result.loc[
-                index_Pax, "end_emigration_counter_process"
-            ] = env.now
+            df_result.loc[index_Pax, "end_emigration_counter_process"] = env.now
 
     def Pax_modern(env, name, dep, STD, Flight_Number):
         """description"""
         df_result.loc[int(name.split("_")[1]), "Pax_ID"] = name
         df_result.loc[int(name.split("_")[1]), "terminal_show_up"] = env.now
         df_result.loc[int(name.split("_")[1]), "STD"] = STD
-        df_result.loc[
-            int(name.split("_")[1]), "flight_number"
-        ] = Flight_Number
+        df_result.loc[int(name.split("_")[1]), "flight_number"] = Flight_Number
 
         airline_code = name.split("_")[2].split()[0]
         index_airline = list_airlines.index(airline_code)
@@ -391,9 +366,7 @@ def KIX_T1d_CUSBD(
             df_result.loc[index_Pax, "start_CUSBD_queue"] = env.now
 
         with dep.CUSBD.request(priority=2) as request:
-            df_result.loc[index_Pax, "CUSBD_queue_length"] = len(
-                dep.CUSBD.queue
-            )
+            df_result.loc[index_Pax, "CUSBD_queue_length"] = len(dep.CUSBD.queue)
             yield request
             df_result.loc[index_Pax, "end_CUSBD_queue"] = env.now
             yield env.process(dep.checkin_2step_CUSBD(name))
@@ -424,9 +397,7 @@ def KIX_T1d_CUSBD(
         df_result.loc[int(name.split("_")[1]), "Pax_ID"] = name
         df_result.loc[int(name.split("_")[1]), "terminal_show_up"] = env.now
         df_result.loc[int(name.split("_")[1]), "STD"] = STD
-        df_result.loc[
-            int(name.split("_")[1]), "flight_number"
-        ] = Flight_Number
+        df_result.loc[int(name.split("_")[1]), "flight_number"] = Flight_Number
 
         airline_code = name.split("_")[2].split()[0]
         index_airline = list_airlines.index(airline_code)
@@ -453,9 +424,7 @@ def KIX_T1d_CUSBD(
             df_result.loc[index_Pax, "start_CUSBD_queue"] = env.now
 
         with dep.CUSBD.request(priority=2) as request:
-            df_result.loc[index_Pax, "CUSBD_queue_length"] = len(
-                dep.CUSBD.queue
-            )
+            df_result.loc[index_Pax, "CUSBD_queue_length"] = len(dep.CUSBD.queue)
             yield request
             df_result.loc[index_Pax, "end_CUSBD_queue"] = env.now
             yield env.process(dep.checkin_2step_CUSBD(name))
@@ -486,9 +455,7 @@ def KIX_T1d_CUSBD(
         df_result.loc[int(name.split("_")[1]), "Pax_ID"] = name
         df_result.loc[int(name.split("_")[1]), "terminal_show_up"] = env.now
         df_result.loc[int(name.split("_")[1]), "STD"] = STD
-        df_result.loc[
-            int(name.split("_")[1]), "flight_number"
-        ] = Flight_Number
+        df_result.loc[int(name.split("_")[1]), "flight_number"] = Flight_Number
 
         airline_code = name.split("_")[2].split()[0]
         index_airline = list_airlines.index(airline_code)
@@ -500,9 +467,7 @@ def KIX_T1d_CUSBD(
                 index_Pax, "n_people_waiting_for_counter_opening"
             ] = dep.dummy_machine2.count
             yield request
-            df_result.loc[
-                index_Pax, "start_wait_for_counter_opening"
-            ] = env.now
+            df_result.loc[index_Pax, "start_wait_for_counter_opening"] = env.now
             yield env.process(dep.wait_opening(name))
             df_result.loc[index_Pax, "start_checkin_counter_queue"] = env.now
 
@@ -533,15 +498,11 @@ def KIX_T1d_CUSBD(
             df_result.loc[index_Pax, "emigration_counter_queue_length"] = len(
                 dep.emigration_counter.queue
             )
-            df_result.loc[
-                index_Pax, "start_emigration_counter_queue"
-            ] = env.now
+            df_result.loc[index_Pax, "start_emigration_counter_queue"] = env.now
             yield request
             df_result.loc[index_Pax, "end_emigration_counter_queue"] = env.now
             yield env.process(dep.emigration_counter_check(name))
-            df_result.loc[
-                index_Pax, "end_emigration_counter_process"
-            ] = env.now
+            df_result.loc[index_Pax, "end_emigration_counter_process"] = env.now
 
     # ======================================= Passenger generator by flight =======================================
 
@@ -583,16 +544,13 @@ def KIX_T1d_CUSBD(
                     if element in list_1:
                         list_1.remove(element)
 
-            start_special_pax_index = int(
-                N_pax_flight * start_special_pax_ratio
-            )
+            start_special_pax_index = int(N_pax_flight * start_special_pax_ratio)
             end_special_pax_index = int(N_pax_flight * end_special_pax_ratio)
 
             flight_index_list = [i for i in range(1, N_pax_flight)]
             flight_index_list_orig = flight_index_list.copy()
             flight_index_list = [
-                i
-                for i in range(start_special_pax_index, end_special_pax_index)
+                i for i in range(start_special_pax_index, end_special_pax_index)
             ]
 
             random.shuffle(flight_index_list)
@@ -723,9 +681,7 @@ def KIX_T1d_CUSBD(
             .sort_values(["minutes"])
             .reset_index(drop=True)
         )
-        env.process(
-            Pax_generator(env, departure, flight, df_Pax_flight, index_total)
-        )
+        env.process(Pax_generator(env, departure, flight, df_Pax_flight, index_total))
         index_total += len(df_Pax_flight["minutes"])
 
     # Execute!
@@ -733,17 +689,13 @@ def KIX_T1d_CUSBD(
 
     if show_loading == True:
         if call_n_iter is not None and totalpbar is not None:
-            with tqdm(
-                total=end_time - 1, desc="Simulation running..."
-            ) as runpbar:
+            with tqdm(total=end_time - 1, desc="Simulation running...") as runpbar:
                 for i in range(1, end_time):
                     env.run(until=i)
                     runpbar.update(1)
                     totalpbar.update(1)
         else:
-            with tqdm(
-                total=end_time - 1, desc="Simulation running..."
-            ) as runpbar:
+            with tqdm(total=end_time - 1, desc="Simulation running...") as runpbar:
                 for i in range(1, end_time):
                     env.run(until=i)
                     runpbar.update(1)
@@ -801,8 +753,7 @@ def KIX_T1d_CUSBD(
 
     # Create waiting times
     df_result["wait_time_checkin_kiosk"] = (
-        df_result["end_checkin_kiosk_queue"]
-        - df_result["start_checkin_kiosk_queue"]
+        df_result["end_checkin_kiosk_queue"] - df_result["start_checkin_kiosk_queue"]
     ).fillna(datetime.timedelta(0))
 
     df_result["wait_time_checkin_counter_opening"] = (
@@ -816,8 +767,7 @@ def KIX_T1d_CUSBD(
     ).fillna(datetime.timedelta(0))
 
     df_result["wait_time_CUSBD_opening"] = (
-        df_result["start_CUSBD_queue"]
-        - df_result["start_wait_for_CUSBD_opening"]
+        df_result["start_CUSBD_queue"] - df_result["start_wait_for_CUSBD_opening"]
     ).fillna(datetime.timedelta(0))
 
     df_result["wait_time_CUSBD"] = (
@@ -851,9 +801,9 @@ def KIX_T1d_CUSBD(
             pd.notna(df_result["start_{}_queue".format(process)])
         )
 
-        df_result.loc[
-            mask, "wait_time_{}".format(process)
-        ] = datetime.timedelta(hours=14)
+        df_result.loc[mask, "wait_time_{}".format(process)] = datetime.timedelta(
+            hours=14
+        )
 
     # dct plot for graphs by list comprehension
     # they correspond to in/out/queue length/wait time
@@ -910,13 +860,9 @@ def KIX_T1d_CUSBD(
 
     # Plot des counters
     data_orig["time"] = data_orig.index
-    data_orig["time"] = data_orig["time"].apply(
-        lambda x: minutes_to_hms(5 * x)
-    )
+    data_orig["time"] = data_orig["time"].apply(lambda x: minutes_to_hms(5 * x))
     data_orig["time"] = pd.to_datetime(data_orig["time"])
-    plot_counter = (
-        data_orig.set_index("time").resample("60S").ffill()[["total"]]
-    )
+    plot_counter = data_orig.set_index("time").resample("60S").ffill()[["total"]]
 
     # correction ratio for resampling with sums
     ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(FREQ)
@@ -952,9 +898,7 @@ def KIX_T1d_CUSBD(
     # queue length
     plt_queue_length = [
         (
-            df_result.set_index(dct_plot[key][0], drop=False)[
-                dct_plot[key][2]
-            ]
+            df_result.set_index(dct_plot[key][0], drop=False)[dct_plot[key][2]]
             .resample(FREQ)
             .agg(["max"])
             .rolling(window=WINDOW, center=True)
@@ -966,9 +910,7 @@ def KIX_T1d_CUSBD(
     # queue duration
     plt_queue_duration = [
         (
-            df_result.set_index(dct_plot[key][0], drop=False)[
-                dct_plot[key][3]
-            ]
+            df_result.set_index(dct_plot[key][0], drop=False)[dct_plot[key][3]]
             .apply(lambda x: x.total_seconds() / 60)
             .resample(FREQ)
             .agg(["max"])
@@ -981,26 +923,24 @@ def KIX_T1d_CUSBD(
 
     plt_hist_wait_time = [
         (
-            df_result[df_result[dct_plot[key][0]].notnull()][
-                dct_plot[key][3]
-            ].apply(lambda x: x.total_seconds() / 60)
+            df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][3]].apply(
+                lambda x: x.total_seconds() / 60
+            )
         )
         for key in [*dct_plot]
     ]
 
     dct_hist_wait_time = {
         key: (
-            df_result[df_result[dct_plot[key][0]].notnull()][
-                dct_plot[key][3]
-            ].apply(lambda x: x.total_seconds() / 60)
+            df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][3]].apply(
+                lambda x: x.total_seconds() / 60
+            )
         )
         for key in [*dct_plot]
     }
 
     dct_hist_queue_length = {
-        key: (
-            df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][2]]
-        )
+        key: (df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][2]])
         for key in [*dct_plot]
     }
 
@@ -1028,9 +968,7 @@ def KIX_T1d_CUSBD(
         for i in [0, 2, 3, 4, 5, 6, 7]:
             axs[i, 0].plot(plt_in[i], label="in", lw=2)
             axs[i, 0].plot(plt_out[i], label="out", lw=2)
-            axs[i, 0].plot(
-                plt_queue_length[i], label="queue length", ls="--", lw=1
-            )
+            axs[i, 0].plot(plt_queue_length[i], label="queue length", ls="--", lw=1)
             ax2[i].plot(
                 plt_queue_duration[i],
                 label="queue duration",
@@ -1065,17 +1003,13 @@ def KIX_T1d_CUSBD(
         i = 1
         axs[i, 0].plot(plt_in[i], label="in", lw=2)
         axs[i, 0].plot(plt_out[i], label="out", ls="--", lw=1)
-        axs[i, 0].plot(
-            plt_queue_length[i], label="queue length", ls="--", lw=1
-        )
+        axs[i, 0].plot(plt_queue_length[i], label="queue length", ls="--", lw=1)
         # ax2[i].plot(plt_queue_duration[i], label="queue duration", color="r",ls='--',lw=1)
         ax2[1].plot(plot_counter, label="Counters", lw=2, color="r")
 
         sns.histplot(plt_hist_wait_time[i], ax=axs[i, 1], bins=30)
 
-        axs[i, 0].set(
-            ylabel="Pax/hr or Pax", title=[*dct_plot][i], xlim=[xmin, xmax]
-        )
+        axs[i, 0].set(ylabel="Pax/hr or Pax", title=[*dct_plot][i], xlim=[xmin, xmax])
         axs[i, 0].set_ylim(bottom=0)
         axs[i, 0].xaxis.set_major_locator(hours)
         axs[i, 0].xaxis.set_major_formatter(h_fmt)
@@ -1163,8 +1097,7 @@ def KIX_T1d_CUSBD(
         writer.save()
 
     list_kpi_queue_length = [
-        list(plt_queue_length[i]["max"].replace(np.nan, 0))
-        for i in range(n_graph)
+        list(plt_queue_length[i]["max"].replace(np.nan, 0)) for i in range(n_graph)
     ]
     list_kpi_wait_time = [list(plt_hist_wait_time[i]) for i in range(n_graph)]
 
@@ -1178,17 +1111,11 @@ def KIX_T1d_CUSBD(
         for i in range(n_graph)
     ]
     kpi_wait_time = [
-        min(
-            heapq.nlargest(
-                int(len(list_kpi_wait_time[i]) / 99), list_kpi_wait_time[i]
-            )
-        )
+        min(heapq.nlargest(int(len(list_kpi_wait_time[i]) / 99), list_kpi_wait_time[i]))
         for i in range(n_graph)
     ]
 
-    list_KPI_run = [
-        [kpi_queue_length[i], kpi_wait_time[i]] for i in range(n_graph)
-    ]
+    list_KPI_run = [[kpi_queue_length[i], kpi_wait_time[i]] for i in range(n_graph)]
 
     return (
         df_result,
@@ -1244,8 +1171,7 @@ def univariate_cost_function_generator_t1d_CUSBD_N(
 
         # caculate cost
         cost_wait_time_run = (
-            dct_hist_wait_time[system_string].quantile(q=0.90)
-            - target_wait_time
+            dct_hist_wait_time[system_string].quantile(q=0.90) - target_wait_time
         ) ** 2
         # correct if:
 
@@ -1256,8 +1182,7 @@ def univariate_cost_function_generator_t1d_CUSBD_N(
         # if the top90% Pax waits 8hrs or more, we need to consider the mean waiting time
         if dct_hist_wait_time[system_string].quantile(q=0.90) >= 13.9 * 60:
             cost_wait_time_run += (
-                (dct_hist_wait_time[system_string].mean() - target_wait_time)
-                ** 2
+                (dct_hist_wait_time[system_string].mean() - target_wait_time) ** 2
             ) / 10000
 
         return cost_wait_time_run
