@@ -75,6 +75,10 @@ target/
 # Jupyter NB Checkpoints
 .ipynb_checkpoints/
 
+# exclude notebook with outputs (keep tree)
+/notebook/full
+!/notebook/full/.gitignore
+
 # exclude data from source control by default
 /data
 
