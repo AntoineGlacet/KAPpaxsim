@@ -16,9 +16,9 @@ Project Organization
     │       └── .env           <- File with local environment parameters
     │                               and passwords. Please ask separately (not uploaded to github) 
     │
-    ├── notebooks              <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                             the creator's initials, and a short `-` delimited description, e.g.
-    │                             `1.0-jqp-initial-data-exploration`.
+    ├── notebooks              <- Jupyter notebooks for analysis and report creation
+    │   ├── full               <- Including outputs (not uploaded to github) 
+    │   └── stripped           <- Manually copied and stripped of outputs (uploaded to github)
     │
     ├── reports                <- Generated analysis as HTML, PDF, LaTeX, etc.
     │   └── figures            <- Generated graphics and figures to be used in reporting
