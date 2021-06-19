@@ -76,18 +76,18 @@ target/
 .ipynb_checkpoints/
 
 # exclude notebook with outputs (keep tree)
-/notebook
-!/notebook/full/.gitkeep
-!/notebook/stripped/*
+notebooks
+!notebooks/full/.gitkeep
+!notebooks/stripped/*
 
 # exclude data from source control by default
 /data
 
 # keep data tree structure
-!/data/interim/.gitkeep
-!/data/processed/.gitkeep
-!/data/raw/.gitkeep
-!/data/secret/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/raw/.gitkeep
+!data/secret/.gitkeep
 
 # Mac OS-specific storage files
 .DS_Store
