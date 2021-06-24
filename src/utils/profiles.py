@@ -298,8 +298,10 @@ def show_up_function(
                     df_Counters_3d.iloc[i, col] = max(
                         base_n_counter,
                         base_n_counter
-                        + (df_Counters_3d.iloc[i, col] - 200)
-                        // seats_per_add_counter,
+                        + (
+                            (df_Counters_3d.iloc[i, col] - 200)
+                            // seats_per_add_counter
+                        ),
                     )
 
         # Then we do the last 45 minutes
