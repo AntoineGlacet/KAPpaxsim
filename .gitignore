@@ -76,9 +76,8 @@ target/
 .ipynb_checkpoints/
 
 # exclude notebook with outputs (keep tree)
-notebooks
+notebooks/full
 !notebooks/full/.gitkeep
-!notebooks/stripped/*
 
 # exclude data from source control by default
 /data
