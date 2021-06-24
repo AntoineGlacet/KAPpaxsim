@@ -1,4 +1,4 @@
-# profiles.py
+# profiles_from_schedule.py
 # import the libraries required to do the work
 import datetime
 import os
@@ -16,63 +16,37 @@ from tqdm import tqdm
 
 
 def show_up_function(
-    target_peak=2900,
-    direction="D",
-    system="security",
-    ratio=1,
-    terminal="T1",
-    CTG_type="A",
-    custom_showup=False,
-    custom_counter_rule=False,
+    path_to_schedule: Path,
+    direction: str = "D",
+    sector: str = "I",
+    terminal: str = "T1",
+    system: str = "terminal",
+    date_str: str = "2017-03-19",
+    CTG_type: str = "A",
+    custom_showup: bool = False,
+    custom_counter_rule: bool = False,
     **kwargs,
 ):
-    """
-    target_peak : target_peak peak hour value (STA or STD). The load factor of each flight will be modified accordingly
-    direction : A/D for arrival or departure
-    system: from (terminal, security, CTG, boarding, deboarding), which show_up profiles to apply to the schedule
-    ratio: ratio applied to each Load Factor for each flight (used to subdivide Pax. eg. Y/J; Jap/Foreign; lvl2/lvl3)
-
-    The function will first identify which year to consider amongst the available schedule forecast
-    Then, it will apply the relevant show-up profile to the selected year, considering the target_peak peak hour value
-    and the ratio if any.
-
-    custom_showup then requires **kwargs to define the norm.cdf values
-
-    loc_FSC = kwargs["loc_FSC"]
-    scale_FSC = kwargs["scale_FSC"]
-    loc_LCC = kwargs["loc_LCC"]
-    scale_LCC = kwargs["scale_LCC"]
-    loc_CHINA = kwargs["loc_CHINA"]
-    scale_CHINA = kwargs["scale_CHINA"]
-    loc_EARLY = kwargs["loc_EARLY"]
-    scale_EARLY = kwargs["scale_EARLY"]
-
-    custom_counter_rule then requires **kwargs to define custom rule
-
-    start_time = kwargs["start_time"]
-    onecountertimer = kwargs["onecounter_time"]
-    base_n_counter = kwargs["base_n_counter"]
-    seats_per_add_counter = kwargs["seats_per_add_counter"]
-
-    """
 
     # =============================== preparatory work for all peak hour extractions============================================
 
     # give the paths to schedule forecast and show-up profiles
-    # we also use the "airline code" sheet for show-up profiles!
-    # move all to ADRM_parameters_full (new) file on sharepoint
-    # and download to project folder
+    # we also use the "airline code" sheet for show-up profiles
     # get env variables (for schedule and show-up files paths)
     DOTENV_FILE_PATH = Path(__file__).parent / "../../data/secret/.env"
     config = AutoConfig(search_path=DOTENV_FILE_PATH)
-    path_forecasts = (
-        Path(__file__).parent
-        / ".."
-        / ".."
-        / config("schedule_forecast_FY19_25_path")
-    )
+
+    path_forecasts = path_to_schedule
+
     path_show_up = (
         Path(__file__).parent / ".." / ".." / config("ADRM_param_full_path")
+    )
+
+    # import the airline_code
+    airline_code = pd.read_excel(
+        path_show_up,
+        sheet_name=r"airline_code",
+        header=0,
     )
 
     # if custom showup, assign the mean and STD
@@ -89,102 +63,28 @@ def show_up_function(
     # import the schedule from the excel file produced by Aero department
     data = pd.read_excel(
         path_forecasts,
-        sheet_name=r"IntlP_FY19-FY25",
+        sheet_name=r"schedule",
         header=0,
     )
 
     # format a Schedules time column to make a Timeserie later on
-    data["5min Interval"] = (
-        data["5min Interval"]
-        .astype(str)
-        .str.pad(width=4, side="left", fillchar="0")
-    )
 
-    data["Scheduled Time"] = "2020-10-13 " + data["5min Interval"].astype(str)
+    data["Scheduled Time"] = "2020-10-13 " + data["Scheduled Time"].astype(
+        str
+    )
     data["Scheduled Time"] = pd.to_datetime(data["Scheduled Time"])
 
     data["Flight Number"] = data["Flight Number"].replace(["JX821"], "JX 821")
 
-    # fonction pour renvoyer les peak_hour
-    def peak_hour(
-        FY=2025, direction="D", weekday="Saturday", sector="I", terminal="T1"
-    ):
-        filtered_data = data[
-            (
-                (data["A/D"] == direction)
-                & (data["Day Of Week"] == weekday)
-                & (data["Int/Dom"] == sector)
-                & (data["Category(P/C/O)"] == "Passenger")
-                & (data["T1/T2(MM/9C/7C/TW)"] == terminal)
-                & (data["FY"] == "FY{}".format(FY))
-            )
-        ]
-
-        filtered_data = filtered_data.set_index("Scheduled Time")
-        filtered_data = filtered_data.sort_index()
-
-        peak_value = (
-            filtered_data["PAX_SUM FC"]
-            .resample("60S")
-            .agg(["sum"])
-            .rolling(window=60, center=True)
-            .sum()
-            .max()[0]
-        )
-        return peak_value
-
-    # calcul des peak hours
-    FY_list = [i for i in range(2019, 2026)]
-    direction_list = ["STA", "STD"]
-
-    df_peak = pd.DataFrame(index=FY_list, columns=direction_list)
-    for dir in direction_list:
-        for FY in FY_list:
-            df_peak.loc[FY, dir] = peak_hour(
-                FY=FY,
-                direction=dir[-1:],
-                weekday="Saturday",
-                sector="I",
-                terminal=terminal,
-            )
-    df_peak.replace(0, np.nan, inplace=True)
-    # declare some constants (consider making it differently?)
-    sector = "I"
-    weekday = "Saturday"
-    airline_code = pd.read_excel(
-        path_show_up,
-        sheet_name=r"airline_code",
-        header=0,
-    )
-
-    # let's find the FY corresponding best to the target_peak
-    if target_peak < df_peak["ST{}".format(direction)].min():
-        FY = df_peak[
-            (
-                df_peak["ST{}".format(direction)]
-                == df_peak["ST{}".format(direction)].min()
-            )
-        ].index[0]
-        schedule_peak = df_peak["ST{}".format(direction)].min()
-    else:
-        maxmin_peak = max(
-            i for i in df_peak["ST{}".format(direction)] if i <= target_peak
-        )
-        FY = df_peak[
-            (df_peak["ST{}".format(direction)] == maxmin_peak)
-        ].index[0]
-        schedule_peak = maxmin_peak
-    # for later, let's store the selected year peak value
     # ===========================================  function start ================================================
     # filter
     filtered_data = data[
         (
             (data["A/D"] == direction)
-            & (data["Day Of Week"] == weekday)
-            & (data["Int/Dom"] == sector)
-            & (data["Category(P/C/O)"] == "Passenger")
+            & (data["Sector"] == sector)
+            & (data["Category(P/C/O)"] == "P")
             & (data["T1/T2(MM/9C/7C/TW)"] == terminal)
-            & (data["FY"] == "FY{}".format(FY))
+            & (data["Flight Date"] == pd.Timestamp(date_str))
         )
     ]
     filtered_data = filtered_data.reset_index()
@@ -378,16 +278,12 @@ def show_up_function(
         f_ter_EARLY_inv_linear = interp1d(f_ter_EARLY(x), x, kind="linear")
         f_ter_CHINA_inv_linear = interp1d(f_ter_CHINA(x), x, kind="linear")
 
-        # let's allocate profiles to flight and apply the ratios to Pax
+        # let's allocate profiles to flight
         list_time_Pax = []
         list_flights = []
         list_ST = []
         for i in range(len(filtered_data)):
-            N_flight_pax = int(
-                filtered_data.loc[i, "PAX_SUM FC"]
-                * ratio
-                * (target_peak / schedule_peak)
-            )
+            N_flight_pax = int(filtered_data.loc[i, "PAX_SUM FC"])
             STD = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
 
@@ -492,16 +388,12 @@ def show_up_function(
             f_sec_MORNING(x), x, kind="linear"
         )
 
-        # let's allocate profiles to flight and apply the ratios to Pax
+        # let's allocate profiles to flight
         list_time_Pax = []
         list_flights = []
         list_ST = []
         for i in range(len(filtered_data)):
-            N_flight_pax = int(
-                filtered_data.loc[i, "PAX_SUM FC"]
-                * ratio
-                * (target_peak / schedule_peak)
-            )
+            N_flight_pax = int(filtered_data.loc[i, "PAX_SUM FC"])
             STD = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
 
@@ -589,16 +481,12 @@ def show_up_function(
         f_CTG_C_inv_linear = interp1d(f_CTG_C(x), x, kind="linear")
         f_CTG_E_inv_linear = interp1d(f_CTG_E(x), x, kind="linear")
 
-        # let's allocate profiles to flight and apply the ratios to Pax
+        # let's allocate profiles to flight
         list_time_Pax = []
         list_flights = []
         list_ST = []
         for i in range(len(filtered_data)):
-            N_flight_pax = int(
-                filtered_data.loc[i, "PAX_SUM FC"]
-                * ratio
-                * (target_peak / schedule_peak)
-            )
+            N_flight_pax = int(filtered_data.loc[i, "PAX_SUM FC"])
             STD = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
 
@@ -657,16 +545,12 @@ def show_up_function(
             f_boarding_E(x)[0:12], x[0:12], kind="linear"
         )
 
-        # let's allocate profiles to flight and apply the ratios to Pax
+        # let's allocate profiles to flight
         list_time_Pax = []
         list_flights = []
         list_ST = []
         for i in range(len(filtered_data)):
-            N_flight_pax = int(
-                filtered_data.loc[i, "PAX_SUM FC"]
-                * ratio
-                * (target_peak / schedule_peak)
-            )
+            N_flight_pax = int(filtered_data.loc[i, "PAX_SUM FC"])
             STD = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
 
@@ -718,16 +602,12 @@ def show_up_function(
         fC_inv_linear = interp1d(fC(x)[0:3], x[0:3], kind="linear")
         fE_inv_linear = interp1d(fE(x)[0:4], x[0:4], kind="linear")
 
-        # let's allocate profiles to flight and apply the ratios to Pax
+        # let's allocate profiles to flight
         list_time_Pax = []
         list_flights = []
         list_ST = []
         for i in range(len(filtered_data)):
-            N_flight_pax = int(
-                filtered_data.loc[i, "PAX_SUM FC"]
-                * ratio
-                * (target_peak / schedule_peak)
-            )
+            N_flight_pax = int(filtered_data.loc[i, "PAX_SUM FC"])
             STA = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
 
@@ -771,10 +651,12 @@ def show_up_function(
 
 # use the function to generate Pax and counters
 def generate_dep_Pax_Counters(
-    target_peak=3900,
-    terminal="T1",
-    custom_showup=False,
-    custom_counter_rule=False,
+    path_to_schedule: Path,
+    sector: str = "I",
+    terminal: str = "T1",
+    date_str: str = "2017-03-19",
+    custom_showup: bool = False,
+    custom_counter_rule: bool = False,
     **kwargs,
 ):
     """
@@ -808,25 +690,28 @@ def generate_dep_Pax_Counters(
     """
     with tqdm(total=2, desc="Pax and counter generation...") as pbar:
         _, df_Pax = show_up_function(
-            target_peak=target_peak,
+            path_to_schedule=path_to_schedule,
             direction="D",
-            system="terminal",
-            ratio=1,
+            sector=sector,
             terminal=terminal,
+            system="terminal",
+            date_str=date_str,
             CTG_type="A",
             custom_showup=custom_showup,
+            custom_counter_rule=custom_counter_rule,
             **kwargs,
         )
         pbar.update(1)
 
         df_Counters = show_up_function(
-            target_peak=target_peak,
+            path_to_schedule=path_to_schedule,
             direction="D",
-            system="check-in",
-            ratio=1,
+            sector=sector,
             terminal=terminal,
+            system="check-in",
+            date_str=date_str,
             CTG_type="A",
-            custom_showup=False,
+            custom_showup=custom_showup,
             custom_counter_rule=custom_counter_rule,
             **kwargs,
         )
@@ -859,7 +744,11 @@ def generate_dep_Pax_Counters(
 
 # use the function to generate Pax and counters
 def generate_arr_Pax(
-    target_peak=3900, terminal="T1", custom_showup=False, **kwargs
+    path_to_schedule: Path,
+    sector: str = "I",
+    terminal: str = "T1",
+    date_str: str = "2017-03-19",
+    **kwargs,
 ):
     """
     returns df_Pax
@@ -867,13 +756,13 @@ def generate_arr_Pax(
     terminal should be "T1" or "T2" ( T2 is corresponds to 4 AL, incl. TW)
     """
     _, df_Pax = show_up_function(
-        target_peak=target_peak,
+        path_to_schedule=path_to_schedule,
         direction="A",
-        system="arrivals",
-        ratio=1,
+        sector=sector,
         terminal=terminal,
+        system="arrivals",
+        date_str=date_str,
         CTG_type="A",
-        custom_showup=custom_showup,
         **kwargs,
     )
 
