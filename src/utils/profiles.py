@@ -296,8 +296,9 @@ def show_up_function(
                     df_Counters_3d.iloc[i, col] = max(
                         base_n_counter,
                         base_n_counter
+                        + 1
                         + (
-                            (df_Counters_3d.iloc[i, col] - 200)
+                            (df_Counters_3d.iloc[i, col] - 201)
                             // seats_per_add_counter
                         ),
                     )
