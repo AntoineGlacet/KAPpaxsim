@@ -380,9 +380,11 @@ def show_up_function(
         f_ter_CHINA_inv_linear = interp1d(f_ter_CHINA(x), x, kind="linear")
 
         # let's allocate profiles to flight and apply the ratios to Pax
+        # should be improved with Dataframe directly
         list_time_Pax = []
         list_flights = []
         list_ST = []
+        list_category = []
         for i in range(len(filtered_data)):
             N_flight_pax = int(
                 filtered_data.loc[i, "PAX_SUM FC"]
@@ -403,12 +405,16 @@ def show_up_function(
                     - f_ter_EARLY_inv_linear(y)
                 )
 
+                category = "EARLY"
+
             elif filtered_data.loc[i, "Intl Regions"] == "China":
                 temps_Terminal = (
                     filtered_data.loc[i, "Scheduled Time"].hour * 60
                     + filtered_data.loc[i, "Scheduled Time"].minute
                     - f_ter_CHINA_inv_linear(y)
                 )
+
+                category = "China"
 
             elif filtered_data.loc[i, "Flight Number"][0:2] in airline_code[
                 airline_code["FSC / LCC"] == "FSC"
@@ -419,12 +425,16 @@ def show_up_function(
                     - f_ter_LCC_inv_linear(y)
                 )
 
+                category = "FSC"
+
             else:
                 temps_Terminal = (
                     filtered_data.loc[i, "Scheduled Time"].hour * 60
                     + filtered_data.loc[i, "Scheduled Time"].minute
                     - f_ter_FSC_inv_linear(y)
                 )
+
+                category = "LCC"
 
             for t in temps_Terminal:
                 t = datetime.datetime(
@@ -438,6 +448,7 @@ def show_up_function(
                 list_time_Pax.append(t)
                 list_flights.append(filtered_data.loc[i, "Flight Number"])
                 list_ST.append(filtered_data.loc[i, "Scheduled Time"])
+                list_category.append(category)
 
     # ====================================== Security =====================================
     # For Security
@@ -765,6 +776,7 @@ def show_up_function(
             "Flight Number": list_flights,
             "time": list_time_Pax,
             "Scheduled Time": list_ST,
+            "Category": list_category,
         }
         df_Pax = pd.DataFrame(dct_Pax)
         return list_time_Pax, df_Pax
