@@ -15,6 +15,9 @@ import pandas as pd
 import seaborn as sns
 import simpy
 from tqdm import tqdm
+from math import ceil
+from src.utils.profiles import show_up_function
+from src.utils.helpers import calculate_EBS_LBC, calculate_EBS_modern_pax_only
 
 
 def KIX_T1d_CUSBD(
@@ -274,23 +277,23 @@ def KIX_T1d_CUSBD(
             yield self.env.timeout(test_time3)
 
         def checkin_2step_kiosk(self, Pax):
-            """ check-in at Kiosk """
+            """check-in at Kiosk"""
             yield self.env.timeout(Pt_kiosk)
 
         def checkin_2step_CUSBD(self, Pax):
-            """ check-in at CUSBD """
+            """check-in at CUSBD"""
             yield self.env.timeout(Pt_checkin_2step_counter)
 
         def security_screening(self, Pax):
-            """ security screening """
+            """security screening"""
             yield self.env.timeout(Pt_security_lanes)
 
         def emigration_counter_check(self, Pax):
-            """ emigration counter check """
+            """emigration counter check"""
             yield self.env.timeout(Pt_emigration_counter)
 
         def emigration_self_check(self, Pax):
-            """ emigration self check """
+            """emigration self check"""
             yield self.env.timeout(Pt_emigration_self)
 
     # ========================= Passenger journey for each type of Pax=================================
@@ -1230,7 +1233,7 @@ def univariate_cost_function_generator_T1d_CUSBD_N(
         # 'kiosk', 'wait_counter_opening', 'checkin_counter',
         # 'security_lanes', 'emigration_counter', 'emigration_self'
         # note: counters are determined by allocation rule so it's not optimizable
-        system_string = variable_string.split("_",1)[1]
+        system_string = variable_string.split("_", 1)[1]
 
         # pass the variable for the parameter to be optimized
         dct_param_T1d[variable_string] = x
@@ -1265,3 +1268,211 @@ def univariate_cost_function_generator_T1d_CUSBD_N(
         return cost_wait_time_run
 
     return cost_function_T1d_CUSBD_N
+
+
+def cost_function_T1d_CUSBD_modern_pax_ratio(
+    modern_pax_ratio,  # ['CUSBD_opening_duration','modern_pax_ratio']
+    target_wait_time,  # target waiting time in minutes
+    dct_param_T1d,  # includes df_Pax
+    target_peak=3880,  # to select good schedule when generating df_Counters
+    custom_counter_rule=True,  # to generate df_Counters
+    call_n_iter=None,
+    totalpbar=None,
+    **kwargs,
+):
+    """
+    cost function for:
+    variables = modern_pax_ratio
+    cost = wait time CUSBD
+    """
+
+    # pass the variable for the parameter to be optimized
+    dct_param_T1d["modern_pax_ratio"] = modern_pax_ratio
+    two_step_ratio = (
+        dct_param_T1d["modern_pax_ratio"] + dct_param_T1d["digital_pax_ratio"]
+    )
+
+    # allocation rule depending on modern_pax_ratio
+    kwargs_rule = {
+        "start_time": 3.5,
+        "onecounter_time": 0.75,
+        "base_n_counter": ceil(3 * (1 - two_step_ratio)),
+        "seats_per_add_counter": ceil(110 / (1 - two_step_ratio)),
+    }
+
+    # generate df_Counter (only)
+    df_Counters = show_up_function(
+        target_peak=target_peak,
+        direction="D",
+        system="check-in",
+        ratio=1,
+        terminal=terminal,
+        CTG_type="A",
+        custom_showup=False,
+        custom_counter_rule=custom_counter_rule,
+        **kwargs,
+    )
+
+    dct_param_T1d["df_Counters"] = df_Counters
+
+    # run the model and get the wait_time and queue_length dicts
+    (
+        _,
+        _,
+        dct_hist_wait_time,
+        _,
+    ) = KIX_T1d_CUSBD(**dct_param_T1d)
+
+    # caculate cost
+    cost_wait_time_run = (
+        dct_hist_wait_time["CUSBD"].quantile(q=0.90) - target_wait_time
+    ) ** 2
+
+    # correction if:
+
+    # if top90% pax do not wait, penalize low %CUSBD
+    if dct_hist_wait_time["CUSBD"].quantile(q=0.90) == 0:
+        cost_wait_time_run += (1 - dct_param_T1d["modern_pax_ratio"]) / 10000
+
+    # if the top90% Pax waits 8hrs or more, penalize high %CUSBD
+    if dct_hist_wait_time["CUSBD"].quantile(q=0.90) >= 13.9 * 60:
+        cost_wait_time_run += (dct_param_T1d["modern_pax_ratio"]) / 10000
+
+    return cost_wait_time_run
+
+
+def cost_function_T1d_CUSBD_CUSBD_opening_duration(
+    CUSBD_opening_duration,  # variable
+    EBS_capacity,  # cost target
+    dct_param_T1d,  # includes df_Pax & df_Counters
+    target_peak=3880,  # to select good schedule when generating df_Counters
+    custom_counter_rule=True,  # to generate df_Counters
+    call_n_iter=None,
+    totalpbar=None,
+    **kwargs,
+):
+    """
+    cost function
+    """
+
+    # pass the variable for the parameter to be optimized
+    dct_param_T1d["CUSBD_opening_duration"] = CUSBD_opening_duration
+
+    # run the model and get the wait_time and queue_length dicts
+    (
+        df_result,
+        _,
+        _,
+        _,
+    ) = KIX_T1d_CUSBD(**dct_param_T1d)
+
+    EBS_requirement = calculate_EBS_LBC(
+        df_result, MUP_open_time=pd.Timedelta(hours=2, minutes=30)
+    )
+
+    # caculate cost
+    cost_EBS = (EBS_capacity - EBS_requirement) ** 2
+
+    # correction if:
+
+    # if EBS empty, penalize short opening duration
+    if EBS_requirement == 0:
+        cost_EBS += (1 / dct_param_T1d["CUSBD_opening_duration"]) / 10000
+
+    # if EBS_full, penalize long opening duration
+    if EBS_requirement > EBS_capacity:
+        cost_EBS += (dct_param_T1d["CUSBD_opening_duration"]) / 10000
+
+    return cost_EBS
+
+
+def cost_function_T1d_CUSBD_2var_modern_pax_ratio_CUSBD_opening_duration(
+    x,  # ['CUSBD_opening_duration','modern_pax_ratio']
+    EBS_capacity,  # cost target
+    target_wait_time,  # target waiting time in minutes
+    dct_param_T1d,  # includes df_Pax
+    target_peak=3880,  # to select good schedule when generating df_Counters
+    custom_counter_rule=True,  # to generate df_Counters
+    call_n_iter=None,
+    totalpbar=None,
+    **kwargs,
+):
+    """
+    cost function for:
+    variables = modern_pax_ratio CUSBD_opening_duration
+    cost = wait time CUSBD EBS capacity
+    """
+
+    # pass the variable for the parameter to be optimized
+    dct_param_T1d["CUSBD_opening_duration"] = x[0]
+    dct_param_T1d["modern_pax_ratio"] = x[1]
+    two_step_ratio = (
+        dct_param_T1d["modern_pax_ratio"] + dct_param_T1d["digital_pax_ratio"]
+    )
+
+    # allocation rule depending on modern_pax_ratio
+    kwargs_rule = {
+        "start_time": 3.5,
+        "onecounter_time": 0.75,
+        "base_n_counter": ceil(3 * (1 - two_step_ratio)),
+        "seats_per_add_counter": ceil(110 / (1 - two_step_ratio)),
+    }
+
+    # generate df_Counter (only)
+    df_Counters = show_up_function(
+        target_peak=target_peak,
+        direction="D",
+        system="check-in",
+        ratio=1,
+        terminal="T1",
+        CTG_type="A",
+        custom_showup=False,
+        custom_counter_rule=custom_counter_rule,
+        **kwargs,
+    )
+
+    dct_param_T1d["df_Counters"] = df_Counters
+
+    # run the model and get the wait_time and queue_length dicts
+    (
+        df_result,
+        _,
+        dct_hist_wait_time,
+        _,
+    ) = KIX_T1d_CUSBD(**dct_param_T1d)
+
+    # caculate cost
+    cost_wait_time_run = (
+        dct_hist_wait_time["CUSBD"].quantile(q=0.90) - target_wait_time
+    ) ** 2
+
+    # correction if:
+
+    # if top90% pax do not wait, penalize low %CUSBD
+    if dct_hist_wait_time["CUSBD"].quantile(q=0.90) == 0:
+        cost_wait_time_run += (1 - dct_param_T1d["modern_pax_ratio"]) / 10000
+
+    # if the top90% Pax waits 8hrs or more, penalize high %CUSBD
+    if dct_hist_wait_time["CUSBD"].quantile(q=0.90) >= 13.9 * 60:
+        cost_wait_time_run += (dct_param_T1d["modern_pax_ratio"]) / 10000
+
+    EBS_requirement, _ = calculate_EBS_modern_pax_only(
+        df_result, MUP_open_time=pd.Timedelta(hours=2, minutes=30)
+    )
+
+    # caculate cost
+    cost_EBS = (EBS_capacity - EBS_requirement) ** 2
+
+    # correction if:
+
+    # if EBS empty, penalize short opening duration
+    if EBS_requirement == 0:
+        cost_EBS += (1 / dct_param_T1d["CUSBD_opening_duration"]) / 10000
+
+    # if EBS_full, penalize long opening duration
+    if EBS_requirement > EBS_capacity:
+        cost_EBS += (dct_param_T1d["CUSBD_opening_duration"]) / 10000
+
+    cost_EBS_CUSBD = cost_EBS + cost_wait_time_run
+
+    return cost_EBS_CUSBD
