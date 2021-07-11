@@ -104,3 +104,51 @@ def calculate_avg_dwell_time(df_result, offset=pd.Timedelta(minutes=15)):
     top90 = df_dwell.quantile(q=0.9) / pd.Timedelta(minutes=1)
 
     return df_dwell, mean, top90
+
+
+def calculate_EBS_modern_pax_only(
+    df_result,
+    MUP_open_time=pd.Timedelta(hours=2, minutes=30),
+):
+    # change the times after midnight to the next day to calculate properly
+    end = pd.Timestamp("2020-10-13 02:00:00")
+    mask_late_flight = df_result["STD"] < end
+    df_result.loc[mask_late_flight, "STD"] += pd.Timedelta(days=1)
+
+    # mask for bags who will use EBS
+    # we take start security queue because some come from checkin and some from CUSBD
+    # we should also remove no bag pax (TBD)
+
+    mask_EBS = (
+        df_result["start_security_queue"] < df_result["STD"] - MUP_open_time
+    ) & (df_result["Pax_ID"].apply(lambda x: x.split("_")[-1]) == "modern")
+    df_result.loc[mask_EBS, "EBS_in"] = df_result.loc[
+        mask_EBS, "start_security_queue"
+    ]
+    df_result.loc[mask_EBS, "EBS_out"] = (
+        df_result.loc[mask_EBS, "STD"] - MUP_open_time
+    )
+
+    plt_in_EBS = (
+        df_result.loc[mask_EBS, ["EBS_in", "Pax_N"]]
+        .set_index("EBS_in", drop=False)["Pax_N"]
+        .resample("15min")
+        .agg(["sum"])
+        .cumsum()
+    )
+
+    plt_out_EBS = (
+        df_result.loc[mask_EBS, ["EBS_out", "Pax_N"]]
+        .set_index("EBS_out", drop=False)["Pax_N"]
+        .resample("15min")
+        .agg(["sum"])
+        .cumsum()
+    )
+
+    EBS_req = (plt_in_EBS - plt_out_EBS).max()[0]
+    if np.isnan(EBS_req):
+        EBS_req = 0
+
+    LBC_req = "Not calculated"
+
+    return EBS_req, LBC_req
