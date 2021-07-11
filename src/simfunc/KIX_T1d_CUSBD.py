@@ -1297,16 +1297,13 @@ def cost_function_T1d_CUSBD_modern_pax_ratio(
         dct_param_T1d["modern_pax_ratio"] + dct_param_T1d["digital_pax_ratio"]
     )
 
-
     # allocation rule depending on modern_pax_ratio
     kwargs_rule = {
         "start_time": 3.5,
         "onecounter_time": 0.75,
-
         "base_n_counter": ceil(3 * (1 - two_step_ratio)),
         "seats_per_add_counter": ceil(110 / (1 - two_step_ratio)),
     }
-
 
     # generate df_Counter (only)
     df_Counters = show_up_function(
@@ -1343,11 +1340,9 @@ def cost_function_T1d_CUSBD_modern_pax_ratio(
 
         cost_wait_time_run += (1 - dct_param_T1d["modern_pax_ratio"]) / 10000
 
-
     # if the top90% Pax waits 8hrs or more, penalize high %CUSBD
     if dct_hist_wait_time["CUSBD"].quantile(q=0.90) >= 13.9 * 60:
         cost_wait_time_run += (dct_param_T1d["modern_pax_ratio"]) / 10000
-
 
     return cost_wait_time_run
 
@@ -1377,11 +1372,9 @@ def cost_function_T1d_CUSBD_CUSBD_opening_duration(
         _,
     ) = KIX_T1d_CUSBD(**dct_param_T1d)
 
-
     EBS_requirement = calculate_EBS_LBC(
         df_result, MUP_open_time=pd.Timedelta(hours=2, minutes=30)
     )
-
 
     # caculate cost
     cost_EBS = (EBS_capacity - EBS_requirement) ** 2
@@ -1392,7 +1385,6 @@ def cost_function_T1d_CUSBD_CUSBD_opening_duration(
     if EBS_requirement == 0:
 
         cost_EBS += (1 / dct_param_T1d["CUSBD_opening_duration"]) / 10000
-
 
     # if EBS_full, penalize long opening duration
     if EBS_requirement > EBS_capacity:
@@ -1443,7 +1435,7 @@ def cost_function_T1d_CUSBD_2var_modern_pax_ratio_CUSBD_opening_duration(
         CTG_type="A",
         custom_showup=False,
         custom_counter_rule=custom_counter_rule,
-        **kwargs,
+        **kwargs_rule,
     )
 
     dct_param_T1d["df_Counters"] = df_Counters
