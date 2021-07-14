@@ -1468,7 +1468,7 @@ def cost_function_T1d_CUSBD_2var_modern_pax_ratio_CUSBD_opening_duration(
     )
 
     # caculate cost
-    cost_EBS = (EBS_capacity - EBS_requirement) ** 2
+    cost_EBS = ((EBS_capacity - EBS_requirement) / 10) ** 2
 
     # correction if:
 
@@ -1480,6 +1480,6 @@ def cost_function_T1d_CUSBD_2var_modern_pax_ratio_CUSBD_opening_duration(
     if EBS_requirement > EBS_capacity:
         cost_EBS += (dct_param_T1d["CUSBD_opening_duration"]) / 10000
 
-    cost_EBS_CUSBD = cost_EBS + cost_wait_time_run
+    cost_EBS_CUSBD = cost_EBS + 10000 * cost_wait_time_run
 
     return cost_EBS_CUSBD
