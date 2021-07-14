@@ -5,6 +5,7 @@
 
 from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
+import ray
 
 
 def custmin(
@@ -200,6 +201,142 @@ def custcallback(
     ax.set(ylabel="cost (log scale)")
     ax.set(xlabel="variable value")
     ax.set_xticks(x_plot)
+    ax.set_yscale("log")
+
+    plt.show()
+
+
+def custmin_multicore(
+    fun,
+    guess=20,
+    N_core=None,
+    callback=None,
+    tol=1,
+):
+    # adapt ray to function
+    @ray.remote
+    def f(x):
+        return fun(x)
+
+    # initialize list of results
+    all_x = []
+    all_y = []
+    loop = 0
+
+    # initialized finished as false
+    finished = False
+
+    # determine initial xmin and xmax
+    xmin = int(max(1, guess - N_core / 2))
+    xmax = int(guess + N_core / 2)
+
+    # loop
+    while finished == False:
+        # build updated x_eval_list
+        x_eval_list = [i for i in range(xmin, xmax, 1)]
+        all_x.extend(x_eval_list)
+
+        # evaluate all points in parallel
+        futures = [f.remote(i) for i in x_eval_list]
+        results = ray.get(futures)
+        all_y.extend(results)
+
+        # evaluate where is the min
+        besty = min(results)
+        index = results.index(besty)
+        bestx = x_eval_list[index]
+
+        # if tolerance is met
+        if besty < tol:
+            finished = True
+            callback(
+                all_x,
+                all_y,
+                bestx,
+                besty,
+                finished,
+                loop,
+            )
+            break
+
+        # if index is the min of x_eval_list
+        if index == 0:
+            callback(
+                all_x,
+                all_y,
+                bestx,
+                besty,
+                finished,
+                loop,
+            )
+            xmax = bestx + 1
+            xmin = int(max(1, xmax - N_core))
+            finished = False
+            loop += 1
+
+        # if index is the min of x_eval_list
+        elif index == len(x_eval_list) - 1:
+            callback(
+                all_x,
+                all_y,
+                bestx,
+                besty,
+                finished,
+                loop,
+            )
+            xmin = bestx
+            xmax = xmin + N_core
+            finished = False
+            loop += 1
+
+        # if we did not reach tol but the min is inside the segment
+        # we finish
+        else:
+            finished = True
+            callback(
+                all_x,
+                all_y,
+                bestx,
+                besty,
+                finished,
+                loop,
+            )
+            break
+
+    return (
+        bestx,
+        besty,
+        finished,
+        all_x,
+        all_y,
+    )
+
+
+def custcallback_multicore(
+    all_x,
+    all_y,
+    bestx,
+    besty,
+    finished,
+    loop,
+):
+    print(
+        "loop #{}:   bestx={}   besty=error={} finished={}".format(
+            loop,
+            bestx,
+            besty,
+            finished,
+        )
+    )
+
+    fig, ax = plt.subplots(figsize=(6, 2))
+    ax.plot(all_x, all_y, "o", color="royalblue")
+
+    # formatting
+    ax.set_xlim(left=0)
+    ax.set(ylabel="cost (log scale)")
+    ax.set(xlabel="variable value")
+    ax.set_xticks(all_x)
     ax.set_yscale("log")
 
     plt.show()

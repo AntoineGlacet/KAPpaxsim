@@ -1311,7 +1311,7 @@ def cost_function_T1d_CUSBD_modern_pax_ratio(
         direction="D",
         system="check-in",
         ratio=1,
-        terminal=terminal,
+        terminal="T1",
         CTG_type="A",
         custom_showup=False,
         custom_counter_rule=custom_counter_rule,
