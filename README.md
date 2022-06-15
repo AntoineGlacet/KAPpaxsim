@@ -57,6 +57,8 @@ Quick start guide
 Detailed start guide
 ------------
 
+##### OUTDATED TO BE REWRITTEN #######
+
 1. Install & start [Anaconda](https://www.anaconda.com/products/individual "Anaconda download") <-
 to install and manage python environments
 2. Download & unzip [source code](https://github.com/AntoineGlacet/KAPpaxsim/archive/refs/heads/main.zip "download code as a zip") in your project directory

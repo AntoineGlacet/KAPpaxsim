@@ -1,9 +1,0 @@
-# Apply to all files without commiting:
-#   pre-commit run --all-files
-# Update this file:
-#   pre-commit autoupdate
-
--   repo: https://github.com/kynan/nbstripout
-    rev: 0.4.0
-    hooks:
-      - id: nbstripout

@@ -15,6 +15,195 @@ from scipy.stats import norm
 from tqdm import tqdm
 
 
+class show_up_generator:
+    def __init__(self) -> None:
+        # ref to config file path
+        DOTENV_FILE_PATH = Path(__file__).parent / "../../data/secret/.env"
+        self.config = AutoConfig(search_path=DOTENV_FILE_PATH)
+        
+        # load show_up_profiles
+        self.path_show_up = (
+            Path(__file__).parent / ".." / ".." / self.config("ADRM_param_full_path")
+        )
+
+        # import the airline_code
+        self.airline_code = pd.read_excel(
+            self.path_show_up,
+            sheet_name=r"airline_code",
+            header=0,
+            )
+
+    def schedule_from_path(self,path_to_schedule:Path):
+        self.path_forecasts = path_to_schedule
+        self.data = pd.read_excel(
+            self.path_forecasts,
+            sheet_name=r"schedule",
+            header=0,
+        )
+
+    def schedule_from_memory(self,dataframe:pd.DataFrame):
+        self.data = dataframe.copy()
+
+
+    def data_cleanup(self):
+        # for easy handling of timestamps later (to be reviewed)
+        self.data["Scheduled Time"] = "2020-10-13 " + self.data["Scheduled Time"].astype(
+            str
+        )
+        self.data["Scheduled Time"] = pd.to_datetime(self.data["Scheduled Time"])
+        # to catch up some formatting mistakes from beontra extracts...
+        self.data["Flight Number"] = self.data["Flight Number"].replace(["JX821"], "JX 821")
+
+    def data_filter(
+        self,
+        direction: str = "D",
+        sector: str = "I",
+        terminal: str = "T1",
+        date_str: str = "2017-03-19",
+        ):
+        filtered_data = self.data[
+            (
+                (self.data["A/D"] == direction)
+                & (self.data["Sector"] == sector)
+                & (self.data["Category(P/C/O)"] == "P")
+                & (self.data["T1/T2(MM/9C/7C/TW)"] == terminal)
+                & (self.data["Flight Date"] == pd.Timestamp(date_str))
+            )
+        ]
+        filtered_data = filtered_data.reset_index()
+        self.data = filtered_data
+
+    def define_show_up(self,df_show_up_profiles:pd.DataFrame):
+        # import show-up from a df
+        # | name | loc | scale | 
+        # | FSC  | 60  |  30   |
+        # loc = mean
+        # scale = standard deviation
+
+        self.dct_f_show_up = {}
+        self.dct_f_inv_linear = {}
+
+        for name in df_show_up_profiles['name']:
+            filter = df_show_up_profiles['name'] == name
+            self.dct_f_show_up['f_'+name] = lambda x: 1 - norm.cdf(
+                x,
+                loc=df_show_up_profiles.loc[filter,'loc'].iat[0], 
+                scale=df_show_up_profiles.loc[filter,'scale'].iat[0],
+                )
+
+        x = np.linspace(0, 360, 100)
+        for key in self.dct_f_show_up:
+            self.dct_f_inv_linear[key] = interp1d(self.dct_f_show_up[key](x), x, kind="linear")
+
+    def plot_show_up_profiles(self):
+        fig, ax = plt.subplots(figsize=(8, 6))
+        x = np.linspace(0, 150, 100)
+
+        for key in self.dct_f_show_up:
+            category = key.split("_")[1]
+            ax.plot(x, self.dct_f_show_up[key](x), label="show-up {}".format(category))
+
+        ax.invert_xaxis()
+
+        ax.legend()
+        # ax.set(xlim=(0, 360), ylim=(0, 1))
+        plt.show()
+
+    def assign_show_up(self):
+        # we need a column "show_up_category" in the schedule dataframe
+        list_time_Pax = []
+        list_flights = []
+        list_ST = []
+        list_category = []
+
+        for i in range(len(self.data)):
+            N_flight_pax = int(self.data.loc[i, "PAX_SUM FC"])
+            STD = self.data.loc[i, "Scheduled Time"]
+            y = np.linspace(0.0001, 0.995, N_flight_pax)
+            show_up_category = self.data.loc[i,"show_up_category"]
+            f_ter_inv_linear = self.dct_f_inv_linear['f_'+ show_up_category]
+
+            temps_Terminal = ( 
+                self.data.loc[i, "Scheduled Time"].hour * 60
+                + self.data.loc[i, "Scheduled Time"].minute
+                - f_ter_inv_linear(y)
+            )
+
+            for t in temps_Terminal:
+                t = datetime.datetime(
+                    year=2020,
+                    month=10,
+                    day=13,
+                    hour=int((t % (24 * 60)) / 60),
+                    minute=int(t % 60),
+                    second=int(t % 1 * 60),
+                )
+                list_time_Pax.append(t)
+                list_flights.append(self.data.loc[i, "Flight Number"])
+                list_ST.append(self.data.loc[i, "Scheduled Time"])
+                list_category.append(show_up_category)
+
+        dct_Pax = {
+            "Flight Number": list_flights,
+            "time": list_time_Pax,
+            "Scheduled Time": list_ST,
+            "Category": list_category,
+        }
+        df_Pax = pd.DataFrame(dct_Pax)
+        
+        self.df_Pax = df_Pax
+        self.df_Pax['Pax'] = 1
+
+    def plot_df_Pax(self):
+        plot = (
+            self.df_Pax.set_index("time", drop=False)["Pax"]
+            .resample("5min")
+            .agg(["sum"])
+            .rolling(window=12, center=True)
+            .mean()
+            .dropna()
+        )
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.plot(plot * 12, label="total show-up")
+
+        # plot param
+        xmin = pd.to_datetime("2020-10-13 00:00:00")
+        xmax = pd.to_datetime("2020-10-14 00:00:00")
+        plt.rcParams.update({"figure.autolayout": True})
+        hours = mdates.HourLocator(interval=1)
+        half_hours = mdates.MinuteLocator(byminute=[0, 30], interval=1)
+        h_fmt = mdates.DateFormatter("%H:%M")
+
+        # formatting
+        ax.set_xlim((xmin, xmax))
+        ax.set_xticks(plot.index.to_list())
+        ax.set_xticklabels(ax.get_xticks(), rotation=45, **{"horizontalalignment": "right"})
+        ax.xaxis.set_major_locator(hours)
+        ax.xaxis.set_major_formatter(h_fmt)
+        ax.xaxis.set_minor_locator(half_hours)
+        ax.legend(loc="upper left", frameon=False)
+
+        plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def show_up_function(
     path_to_schedule: Path,
     direction: str = "D",
