@@ -174,6 +174,9 @@ def show_up_function(
             (df_peak["ST{}".format(direction)] == maxmin_peak)
         ].index[0]
         schedule_peak = maxmin_peak
+        
+        print(df_peak)
+        print('chosen reference year: '+str(FY))
     # for later, let's store the selected year peak value
     # ===========================================  function start ================================================
     # filter
