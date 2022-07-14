@@ -14,100 +14,202 @@ from scipy.interpolate import interp1d
 from scipy.stats import norm
 from tqdm import tqdm
 
+"""
+rename some variables
+distinguish between profiles and category
+"""
 
-class show_up_generator:
-    def __init__(self) -> None:
+
+class SimParam:
+    """
+    Class containing the simulation parameters
+    schedule, show-up, airline codes, Pt, N, etc...
+    """
+
+    def __init__(
+        self,
+        dotenv_file_path: Path = Path(__file__).parent / "../../data/secret/.env",
+    ):
         # ref to config file path
-        DOTENV_FILE_PATH = Path(__file__).parent / "../../data/secret/.env"
-        self.config = AutoConfig(search_path=DOTENV_FILE_PATH)
-        
+        self.config = AutoConfig(search_path=dotenv_file_path)
+
         # load show_up_profiles
-        self.path_show_up = (
+        self.path_param = (
             Path(__file__).parent / ".." / ".." / self.config("ADRM_param_full_path")
         )
 
         # import the airline_code
         self.airline_code = pd.read_excel(
-            self.path_show_up,
+            self.path_param,
             sheet_name=r"airline_code",
             header=0,
-            )
+        )
+        # LCC list (2 char A/L codes)
+        mask_LCC = self.airline_code["FSC / LCC"] == "LCC"
+        self.airline_code[mask_LCC]
+        self.list_LCC = self.airline_code[mask_LCC]["airline code"].to_numpy(
+            dtype="str"
+        )
 
-    def schedule_from_path(self,path_to_schedule:Path):
-        self.path_forecasts = path_to_schedule
-        self.data = pd.read_excel(
-            self.path_forecasts,
+    def schedule_from_path(self, path: Path):
+        """
+        table should be formatted with following columns
+        | A/D | T1/T2(MM/9C/7C/TW) | Intl Regions | Category(P/C/O) | Sector |
+        | Flight Number | SEATS FC | PAX_SUM FC | Flight Date | Scheduled Time |
+        """
+        self.path = path
+        self.schedule = pd.read_excel(
+            self.path,
             sheet_name=r"schedule",
             header=0,
         )
+        self.schedule_origin = self.schedule
 
-    def schedule_from_memory(self,dataframe:pd.DataFrame):
-        self.data = dataframe.copy()
+    def schedule_from_df(self, dataframe: pd.DataFrame):
+        """
+        table should be formatted with following columns
+        | A/D | T1/T2(MM/9C/7C/TW) | Intl Regions | Category(P/C/O) | Sector |
+        | Flight Number | SEATS FC | PAX_SUM FC | Flight Date | Scheduled Time |
+        """
+        self.schedule = dataframe.copy()
+        self.schedule_origin = self.schedule
 
-
-    def data_cleanup(self):
+    def schedule_cleanup(self):
+        """
+        some cleaning operations on the schedule to correct inputs mistakes
+        """
         # for easy handling of timestamps later (to be reviewed)
-        self.data["Scheduled Time"] = "2020-10-13 " + self.data["Scheduled Time"].astype(
-            str
+        self.schedule["Scheduled Time"] = "2020-10-13 " + self.schedule[
+            "Scheduled Time"
+        ].astype(str)
+        self.schedule["Scheduled Time"] = pd.to_datetime(
+            self.schedule["Scheduled Time"]
         )
-        self.data["Scheduled Time"] = pd.to_datetime(self.data["Scheduled Time"])
         # to catch up some formatting mistakes from beontra extracts...
-        self.data["Flight Number"] = self.data["Flight Number"].replace(["JX821"], "JX 821")
+        self.schedule["Flight Number"] = self.schedule["Flight Number"].replace(
+            ["JX821"], "JX 821"
+        )
+        self.schedule["Flight Number"] = self.schedule["Flight Number"].replace(
+            ["NS*****"], "NS *****"
+        )
+        # split Airline Code
+        self.schedule["Airline Code"] = self.schedule["Flight Number"].str.split(
+            " ", 1, expand=True
+        )[0]
+        # bad formatting of 0 pax flight I guess? for JAL 8126
+        self.schedule["PAX_SUM FC"].replace("-", 0, inplace=True)
+        # store for reference
+        self.schedule_clean = self.schedule
 
-    def data_filter(
+    def schedule_filter(
         self,
         direction: str = "D",
         sector: str = "I",
         terminal: str = "T1",
         date_str: str = "2017-03-19",
-        ):
-        filtered_data = self.data[
+    ):
+        filtered_data = self.schedule[
             (
-                (self.data["A/D"] == direction)
-                & (self.data["Sector"] == sector)
-                & (self.data["Category(P/C/O)"] == "P")
-                & (self.data["T1/T2(MM/9C/7C/TW)"] == terminal)
-                & (self.data["Flight Date"] == pd.Timestamp(date_str))
+                (self.schedule["A/D"] == direction)
+                & (self.schedule["Sector"] == sector)
+                & (self.schedule["Category(P/C/O)"] == "P")
+                & (self.schedule["T1/T2(MM/9C/7C/TW)"] == terminal)
+                & (self.schedule["Flight Date"] == pd.Timestamp(date_str))
+                # remove 0 Pax flights
+                & (self.schedule["PAX_SUM FC"] != 0)
             )
         ]
         filtered_data = filtered_data.reset_index()
-        self.data = filtered_data
+        self.schedule = filtered_data
+        self.schedule_filtered = self.schedule
 
-    def define_show_up(self,df_show_up_profiles:pd.DataFrame):
+    def assign_flight_show_up_category_default(self):
+        """
+        adds 'show_up_category' col to self.schedule
+        assigns EARLY, China, LCC or FSC category
+        """
+        for i in range(len(self.schedule)):
+            std = self.schedule.loc[i, "Scheduled Time"]
+            if std < pd.to_datetime("2020-10-13 08:00:00") and std >= pd.to_datetime(
+                "2020-10-13 02:00:00"
+            ):
+                category = "EARLY"
+
+            elif self.schedule.loc[i, "Intl Regions"] == "China":
+                category = "CHINA"
+
+            elif self.schedule.loc[i, "Flight Number"][0:2] in self.list_LCC:
+                category = "LCC"
+
+            else:
+                category = "FSC"
+
+            self.schedule.loc[i, "show_up_category"] = category
+
+        self.schedule_show_up_cat = self.schedule
+
+    def define_norm_show_up(self, df_show_up_profiles: pd.DataFrame):
         # import show-up from a df
-        # | name | loc | scale | 
+        # | name | loc | scale |
         # | FSC  | 60  |  30   |
         # loc = mean
         # scale = standard deviation
+        # /!\ requires a 'show_up_category' col in self.schedule
+        self.df_show_up_profiles = df_show_up_profiles
 
-        self.dct_f_show_up = {}
-        self.dct_f_inv_linear = {}
-
-        for name in df_show_up_profiles['name']:
-            filter = df_show_up_profiles['name'] == name
-            self.dct_f_show_up['f_'+name] = lambda x: 1 - norm.cdf(
+        self.dct_f_show_up = {
+            name: lambda x, name=name: 1
+            - norm.cdf(
                 x,
-                loc=df_show_up_profiles.loc[filter,'loc'].iat[0], 
-                scale=df_show_up_profiles.loc[filter,'scale'].iat[0],
-                )
+                loc=self.df_show_up_profiles.loc[
+                    self.df_show_up_profiles["name"] == name, "loc"
+                ].iat[0],
+                scale=self.df_show_up_profiles.loc[
+                    self.df_show_up_profiles["name"] == name, "scale"
+                ].iat[0],
+            )
+            for name in self.df_show_up_profiles["name"]
+        }
 
         x = np.linspace(0, 360, 100)
-        for key in self.dct_f_show_up:
-            self.dct_f_inv_linear[key] = interp1d(self.dct_f_show_up[key](x), x, kind="linear")
 
-    def plot_show_up_profiles(self):
-        fig, ax = plt.subplots(figsize=(8, 6))
-        x = np.linspace(0, 150, 100)
+        self.dct_f_inv_linear = {
+            name: interp1d(self.dct_f_show_up[name](x), x, kind="linear")
+            for name in self.dct_f_show_up
+        }
 
-        for key in self.dct_f_show_up:
-            category = key.split("_")[1]
-            ax.plot(x, self.dct_f_show_up[key](x), label="show-up {}".format(category))
+    def show_up_from_file(self):
+        """
+        import from the ADRM param excel file
+        # import show-up from a df
+        # | name | loc | scale |
+        # | FSC  | 60  |  30   |
+        # loc = mean
+        # scale = standard deviation
+        # /!\ requires a 'show_up_category' col in self.schedule
+        """
+        show_up_ter = pd.read_excel(
+            self.path_param,
+            sheet_name=r"terminal",
+            header=1,
+        )
 
-        ax.invert_xaxis()
+        list_cat = ["EARLY", "CHINA", "LCC", "FSC"]
 
-        ax.legend()
-        # ax.set(xlim=(0, 360), ylim=(0, 1))
-        plt.show()
+        dct_show_up_profiles = {
+            "name": [cat for cat in list_cat],
+            "loc": [
+                show_up_ter.loc[0, "cumulative distribution {}".format(cat)]
+                for cat in list_cat
+            ],
+            "scale": [
+                show_up_ter.loc[1, "cumulative distribution {}".format(cat)]
+                for cat in list_cat
+            ],
+        }
+
+        self.df_show_up_profiles = pd.DataFrame.from_dict(dct_show_up_profiles)
+        self.define_norm_show_up(self.df_show_up_profiles)
 
     def assign_show_up(self):
         # we need a column "show_up_category" in the schedule dataframe
@@ -116,16 +218,16 @@ class show_up_generator:
         list_ST = []
         list_category = []
 
-        for i in range(len(self.data)):
-            N_flight_pax = int(self.data.loc[i, "PAX_SUM FC"])
-            STD = self.data.loc[i, "Scheduled Time"]
-            y = np.linspace(0.0001, 0.995, N_flight_pax)
-            show_up_category = self.data.loc[i,"show_up_category"]
-            f_ter_inv_linear = self.dct_f_inv_linear['f_'+ show_up_category]
+        for i in range(len(self.schedule)):
+            N_flight_pax = int(self.schedule.loc[i, "PAX_SUM FC"])
+            STD = self.schedule.loc[i, "Scheduled Time"]
+            y = np.linspace(0.01, 0.99, N_flight_pax)
+            show_up_category = self.schedule.loc[i, "show_up_category"]
+            f_ter_inv_linear = self.dct_f_inv_linear[show_up_category]
 
-            temps_Terminal = ( 
-                self.data.loc[i, "Scheduled Time"].hour * 60
-                + self.data.loc[i, "Scheduled Time"].minute
+            temps_Terminal = (
+                self.schedule.loc[i, "Scheduled Time"].hour * 60
+                + self.schedule.loc[i, "Scheduled Time"].minute
                 - f_ter_inv_linear(y)
             )
 
@@ -139,8 +241,8 @@ class show_up_generator:
                     second=int(t % 1 * 60),
                 )
                 list_time_Pax.append(t)
-                list_flights.append(self.data.loc[i, "Flight Number"])
-                list_ST.append(self.data.loc[i, "Scheduled Time"])
+                list_flights.append(self.schedule.loc[i, "Flight Number"])
+                list_ST.append(self.schedule.loc[i, "Scheduled Time"])
                 list_category.append(show_up_category)
 
         dct_Pax = {
@@ -150,9 +252,158 @@ class show_up_generator:
             "Category": list_category,
         }
         df_Pax = pd.DataFrame(dct_Pax)
-        
+
         self.df_Pax = df_Pax
-        self.df_Pax['Pax'] = 1
+        self.df_Pax["Pax"] = 1
+        self.prepare_schedule_for_simulation()
+
+    def prepare_schedule_for_simulation(self):
+        self.df_Pax["minutes"] = (
+            self.df_Pax["time"].dt.hour.astype(int) * 60
+            + self.df_Pax["time"].dt.minute.astype(int)
+            + self.df_Pax["time"].dt.second.astype(int) / 60
+        )
+
+    def assign_check_in(self):
+        # change to parameters, add A/L groups if needed
+        start_time = 2.5  # hours before STD for check-in opening
+        onecounter_time = 0.75  # hours before STD with only one counter
+        base_n_counter = 4
+        seats_per_add_counter = 60
+
+        # in case we change checkin counter allocation rule
+        # if custom_counter_rule == True:
+        #     start_time = kwargs["start_time"]
+        #     onecounter_time = kwargs["onecounter_time"]
+        #     base_n_counter = kwargs["base_n_counter"]
+        #     seats_per_add_counter = kwargs["seats_per_add_counter"]
+
+        onecounter_slot = -int(((onecounter_time) * 60) // 5)
+        start_slot = -int(((start_time) * 60) // 5)
+
+        # create a dictionnary of airline and seats per 5 minutes
+        # initialize with all {airline_code : [0...0]}
+        dico = {
+            airline_code: [0 for i in range(int(24 * 60 / 5))]
+            for airline_code in self.schedule["Airline Code"]
+        }
+
+        # boucle sur les airlines
+        for airline_code in self.schedule["Airline Code"].unique():
+
+            # boucle sur les flight code
+            for flight_number in self.schedule[
+                (self.schedule["Airline Code"] == airline_code)
+            ]["Flight Number"]:
+
+                # round down 5 minutes le STD
+                time = self.schedule[self.schedule["Flight Number"] == flight_number][
+                    "Scheduled Time"
+                ].iloc[0]
+                STD_5interval = (time.hour * 60 + time.minute) // 5
+
+                # on met le nombre de seats du vol à la position qui va bien dans les listes du dico
+                dico[airline_code][STD_5interval] = (
+                    dico[airline_code][STD_5interval]
+                    + self.schedule[
+                        (self.schedule["Scheduled Time"] == time)
+                        & (self.schedule["Flight Number"] == flight_number)
+                    ]["SEATS FC"].iloc[0]
+                )
+
+        df_Seats = pd.DataFrame.from_dict(dico)
+
+        # initialize some dataframes
+        df_Counters = pd.DataFrame().reindex_like(df_Seats)
+        for col in df_Counters.columns:
+            df_Counters[col].values[:] = int(0)
+
+        # create a df over 3 days to avoid errors for flights close to midnight
+        df_Counters_previous_day = df_Counters.copy()
+        df_Counters_next_day = df_Counters.copy()
+        df_Counters_previous_day = df_Counters_previous_day.reindex(
+            index=["day-1 {}".format(i) for i in range(0, 288)]
+        )
+        df_Counters_next_day = df_Counters_next_day.reindex(
+            index=["day+1 {}".format(i) for i in range(0, 288)]
+        )
+
+        df1 = df_Counters_previous_day
+        df2 = df_Counters
+        df3 = df_Counters_next_day
+
+        df_Counters_3d = df1.append(df2).append(df3)
+        df_Counters_3d = df_Counters_3d.fillna(0)
+
+        offset = 288
+
+        # First we add the seats for 2.5 hours before STD
+        # to 45 min before STD
+        for col in range(len(df_Seats.columns)):
+            for i in range(len(df_Seats.index)):
+                # When we see a cell with Seats for a flight
+                if df_Seats.iloc[i, col] != 0:
+                    # Wee check from 45 minutes to 2.5 hours before STD
+                    for j in range(start_slot, onecounter_slot):
+                        # for each cell, if there is already a number, we put add the seats
+                        df_Counters_3d.iloc[i + offset + j, col] = (
+                            df_Counters_3d.iloc[i + offset + j, col]
+                            + df_Seats.iloc[i, col]
+                        )
+        # now we have a table with seats, let's apply the rule
+        # valid on that period
+        for col in range(len(df_Counters_3d.columns)):
+            for i in range(len(df_Counters_3d.index)):
+                if 0 < df_Counters_3d.iloc[i, col]:
+                    df_Counters_3d.iloc[i, col] = max(
+                        base_n_counter,
+                        base_n_counter
+                        + 1
+                        + (
+                            (df_Counters_3d.iloc[i, col] - 201) // seats_per_add_counter
+                        ),
+                    )
+
+        # Then we do the last 45 minutes
+
+        for col in range(len(df_Seats.columns)):
+            for i in range(len(df_Seats.index)):
+                # When we see a cell with Seats for a flight
+                if df_Seats.iloc[i, col] != 0:
+                    # we check from STD to 45 minutes before
+                    for j in range(onecounter_slot, 1):
+                        # only if no other flights are checking in, do we add a counter
+                        if df_Counters_3d.iloc[i + offset + j, col] == 0:
+                            df_Counters_3d.iloc[i + offset + j, col] = 1
+
+        # merge into only 1d
+        df_Counters_final = df_Counters.copy()
+        for i in range(len(df_Counters_final.index)):
+            df_Counters_final.iloc[i, :] = (
+                df_Counters_3d.iloc[i, :]
+                + df_Counters_3d.iloc[i + offset, :]
+                + df_Counters_3d.iloc[i + 2 * offset, :]
+            )
+        df_Counters_final["total"] = df_Counters_final.sum(axis=1)
+
+        self.df_Counters = df_Counters_final
+
+    def plot_show_up_categories_profiles(self):
+        fig, ax = plt.subplots(figsize=(8, 6))
+        x = np.linspace(0, 360, 100)
+
+        for key in self.dct_f_show_up:
+            ax.plot(
+                x,
+                self.dct_f_show_up[key](x),
+                label="show-up {}".format(key),
+            )
+
+        ax.invert_xaxis()
+
+        ax.legend()
+        # ax.set(xlim=(0, 360), ylim=(0, 1))
+        plt.show()
 
     def plot_df_Pax(self):
         plot = (
@@ -178,7 +429,9 @@ class show_up_generator:
         # formatting
         ax.set_xlim((xmin, xmax))
         ax.set_xticks(plot.index.to_list())
-        ax.set_xticklabels(ax.get_xticks(), rotation=45, **{"horizontalalignment": "right"})
+        ax.set_xticklabels(
+            ax.get_xticks(), rotation=45, **{"horizontalalignment": "right"}
+        )
         ax.xaxis.set_major_locator(hours)
         ax.xaxis.set_major_formatter(h_fmt)
         ax.xaxis.set_minor_locator(half_hours)
@@ -186,22 +439,11 @@ class show_up_generator:
 
         plt.show()
 
+    def plot_std_profiles(self):
+        pass
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def plot_show_up_profiles(self):
+        pass
 
 
 def show_up_function(
@@ -212,7 +454,7 @@ def show_up_function(
     system: str = "terminal",
     date_str: str = "2017-03-19",
     CTG_type: str = "A",
-    custom_showup: bool = False,
+    custom_show_up: bool = False,
     custom_counter_rule: bool = False,
     **kwargs,
 ):
@@ -227,19 +469,17 @@ def show_up_function(
 
     path_forecasts = path_to_schedule
 
-    path_show_up = (
-        Path(__file__).parent / ".." / ".." / config("ADRM_param_full_path")
-    )
+    path_param = Path(__file__).parent / ".." / ".." / config("ADRM_param_full_path")
 
     # import the airline_code
     airline_code = pd.read_excel(
-        path_show_up,
+        path_param,
         sheet_name=r"airline_code",
         header=0,
     )
 
-    # if custom showup, assign the mean and STD
-    if custom_showup == True:
+    # if custom show_up, assign the mean and STD
+    if custom_show_up == True:
         loc_FSC = kwargs["loc_FSC"]
         scale_FSC = kwargs["scale_FSC"]
         loc_LCC = kwargs["loc_LCC"]
@@ -258,9 +498,7 @@ def show_up_function(
 
     # format a Schedules time column to make a Timeserie later on
 
-    data["Scheduled Time"] = "2020-10-13 " + data["Scheduled Time"].astype(
-        str
-    )
+    data["Scheduled Time"] = "2020-10-13 " + data["Scheduled Time"].astype(str)
     data["Scheduled Time"] = pd.to_datetime(data["Scheduled Time"])
 
     data["Flight Number"] = data["Flight Number"].replace(["JX821"], "JX 821")
@@ -281,16 +519,10 @@ def show_up_function(
     # ====================================== Counters =====================================
     if system == "check-in":
         # NEW fix some input mistakes
-        data["Flight Number"] = data["Flight Number"].replace(
-            ["JX821"], "JX 821"
-        )
-        data["Flight Number"] = data["Flight Number"].replace(
-            ["NS*****"], "NS *****"
-        )
+        data["Flight Number"] = data["Flight Number"].replace(["JX821"], "JX 821")
+        data["Flight Number"] = data["Flight Number"].replace(["NS*****"], "NS *****")
         # split Airline Code
-        data["Airline Code"] = data["Flight Number"].str.split(
-            " ", 1, expand=True
-        )[0]
+        data["Airline Code"] = data["Flight Number"].str.split(" ", 1, expand=True)[0]
 
         # NEW
         start_time = 2.5  # hours before STD for check-in opening
@@ -387,8 +619,7 @@ def show_up_function(
                         base_n_counter
                         + 1
                         + (
-                            (df_Counters_3d.iloc[i, col] - 201)
-                            // seats_per_add_counter
+                            (df_Counters_3d.iloc[i, col] - 201) // seats_per_add_counter
                         ),
                     )
 
@@ -421,7 +652,7 @@ def show_up_function(
     if system == "terminal":
         # import of the excel with the show up profiles
         show_up_ter = pd.read_excel(
-            path_show_up,
+            path_param,
             sheet_name=r"terminal",
             header=1,
         )
@@ -431,37 +662,21 @@ def show_up_function(
         # interpolation of show_up profiles and inverse functions
         x = show_up_ter["time before STD"].to_numpy(dtype=float)
 
-        yFSC = show_up_ter["cumulative distribution FSC"].to_numpy(
-            dtype=float
-        )
-        yLCC = show_up_ter["cumulative distribution LCC"].to_numpy(
-            dtype=float
-        )
-        yEARLY = show_up_ter["cumulative distribution EARLY"].to_numpy(
-            dtype=float
-        )
-        yCHINA = show_up_ter["cumulative distribution CHINA"].to_numpy(
-            dtype=float
-        )
+        yFSC = show_up_ter["cumulative distribution FSC"].to_numpy(dtype=float)
+        yLCC = show_up_ter["cumulative distribution LCC"].to_numpy(dtype=float)
+        yEARLY = show_up_ter["cumulative distribution EARLY"].to_numpy(dtype=float)
+        yCHINA = show_up_ter["cumulative distribution CHINA"].to_numpy(dtype=float)
 
         f_ter_FSC = interp1d(x, yFSC, kind="linear")
         f_ter_LCC = interp1d(x, yLCC, kind="linear")
         f_ter_EARLY = interp1d(x, yEARLY, kind="linear")
         f_ter_CHINA = interp1d(x, yCHINA, kind="linear")
 
-        if custom_showup == True:
-            f_ter_FSC = lambda x: 1 - norm.cdf(
-                x, loc=loc_FSC, scale=scale_FSC
-            )
-            f_ter_LCC = lambda x: 1 - norm.cdf(
-                x, loc=loc_LCC, scale=scale_LCC
-            )
-            f_ter_EARLY = lambda x: 1 - norm.cdf(
-                x, loc=loc_EARLY, scale=scale_EARLY
-            )
-            f_ter_CHINA = lambda x: 1 - norm.cdf(
-                x, loc=loc_CHINA, scale=scale_CHINA
-            )
+        if custom_show_up == True:
+            f_ter_FSC = lambda x: 1 - norm.cdf(x, loc=loc_FSC, scale=scale_FSC)
+            f_ter_LCC = lambda x: 1 - norm.cdf(x, loc=loc_LCC, scale=scale_LCC)
+            f_ter_EARLY = lambda x: 1 - norm.cdf(x, loc=loc_EARLY, scale=scale_EARLY)
+            f_ter_CHINA = lambda x: 1 - norm.cdf(x, loc=loc_CHINA, scale=scale_CHINA)
 
         f_ter_FSC_inv_linear = interp1d(f_ter_FSC(x), x, kind="linear")
         f_ter_LCC_inv_linear = interp1d(f_ter_LCC(x), x, kind="linear")
@@ -540,7 +755,7 @@ def show_up_function(
     if system == "security":
         # import of the excel with the show up profiles
         show_up_sec = pd.read_excel(
-            path_show_up,
+            path_param,
             sheet_name=r"PRS",
             header=1,
         )
@@ -550,29 +765,19 @@ def show_up_function(
         # interpolation of show_up profiles and inverse functions
         x = show_up_sec["time before STD"].to_numpy(dtype=float)
 
-        yFSC = show_up_sec["cumulative distribution FSC"].to_numpy(
-            dtype=float
-        )
+        yFSC = show_up_sec["cumulative distribution FSC"].to_numpy(dtype=float)
         f_sec_FSC = interp1d(x, yFSC, kind="linear")
 
-        yLCC = show_up_sec["cumulative distribution LCC"].to_numpy(
-            dtype=float
-        )
+        yLCC = show_up_sec["cumulative distribution LCC"].to_numpy(dtype=float)
         f_sec_LCC = interp1d(x, yLCC, kind="linear")
 
-        yEARLY = show_up_sec["cumulative distribution EARLY"].to_numpy(
-            dtype=float
-        )
+        yEARLY = show_up_sec["cumulative distribution EARLY"].to_numpy(dtype=float)
         f_sec_EARLY = interp1d(x, yEARLY, kind="linear")
 
-        yCHINA = show_up_sec["cumulative distribution CHINA"].to_numpy(
-            dtype=float
-        )
+        yCHINA = show_up_sec["cumulative distribution CHINA"].to_numpy(dtype=float)
         f_sec_CHINA = interp1d(x, yEARLY, kind="linear")
 
-        yMORNING = show_up_sec["cumulative distribution MORNING"].to_numpy(
-            dtype=float
-        )
+        yMORNING = show_up_sec["cumulative distribution MORNING"].to_numpy(dtype=float)
         f_sec_MORNING = interp1d(x, yEARLY, kind="linear")
 
         f_sec_FSC = interp1d(x, yFSC, kind="linear")
@@ -585,9 +790,7 @@ def show_up_function(
         f_sec_LCC_inv_linear = interp1d(f_sec_LCC(x), x, kind="linear")
         f_sec_EARLY_inv_linear = interp1d(f_sec_EARLY(x), x, kind="linear")
         f_sec_CHINA_inv_linear = interp1d(f_sec_CHINA(x), x, kind="linear")
-        f_sec_MORNING_inv_linear = interp1d(
-            f_sec_MORNING(x), x, kind="linear"
-        )
+        f_sec_MORNING_inv_linear = interp1d(f_sec_MORNING(x), x, kind="linear")
 
         # let's allocate profiles to flight
         list_time_Pax = []
@@ -660,7 +863,7 @@ def show_up_function(
     if system == "CTG":
         # import of the excel with the show up profiles
         show_up_CTG = pd.read_excel(
-            path_show_up,
+            path_param,
             sheet_name=r"CTG",
             header=1,
         )
@@ -721,7 +924,7 @@ def show_up_function(
     if system == "boarding":
         # import of the excel with the show up profiles
         show_up_boarding = pd.read_excel(
-            path_show_up,
+            path_param,
             sheet_name=r"boarding",
             header=0,
         )
@@ -730,12 +933,12 @@ def show_up_function(
         # interpolation of boarding profiles for specified type and inverse functions
         x = show_up_boarding["time before STD"].to_numpy(dtype=float)
 
-        y_boarding_C = show_up_boarding[
-            "cumulative distribution code C"
-        ].to_numpy(dtype=float)
-        y_boarding_E = show_up_boarding[
-            "cumulative distribution code E"
-        ].to_numpy(dtype=float)
+        y_boarding_C = show_up_boarding["cumulative distribution code C"].to_numpy(
+            dtype=float
+        )
+        y_boarding_E = show_up_boarding["cumulative distribution code E"].to_numpy(
+            dtype=float
+        )
         f_boarding_C = interp1d(x, y_boarding_C, kind="linear")
         f_boarding_E = interp1d(x, y_boarding_E, kind="linear")
 
@@ -785,19 +988,15 @@ def show_up_function(
     if system == "arrivals":
         # read the excel with show-up profiles
         show_up_arrival = pd.read_excel(
-            path_show_up,
+            path_param,
             sheet_name=r"deboarding",
             header=1,
         )
 
         # interpolate deboarding profiles to use on schedule
         x = show_up_arrival["time after STA"].to_numpy(dtype=float)
-        yC = show_up_arrival["cumulative distribution code C"].to_numpy(
-            dtype=float
-        )
-        yE = show_up_arrival["cumulative distribution code E"].to_numpy(
-            dtype=float
-        )
+        yC = show_up_arrival["cumulative distribution code C"].to_numpy(dtype=float)
+        yE = show_up_arrival["cumulative distribution code E"].to_numpy(dtype=float)
         fC = interp1d(x, yC, kind="linear")
         fE = interp1d(x, yE, kind="linear")
         fC_inv_linear = interp1d(fC(x)[0:3], x[0:3], kind="linear")
@@ -857,7 +1056,7 @@ def generate_dep_Pax_Counters(
     sector: str = "I",
     terminal: str = "T1",
     date_str: str = "2017-03-19",
-    custom_showup: bool = False,
+    custom_show_up: bool = False,
     custom_counter_rule: bool = False,
     **kwargs,
 ):
@@ -871,7 +1070,7 @@ def generate_dep_Pax_Counters(
     Then, it will apply the relevant show-up profile to the selected year, considering the target_peak peak hour value
     and the ratio if any.
 
-    custom_showup then requires **kwargs to define the norm.cdf values
+    custom_show_up then requires **kwargs to define the norm.cdf values
 
     loc_FSC = kwargs["loc_FSC"]
     scale_FSC = kwargs["scale_FSC"]
@@ -899,13 +1098,13 @@ def generate_dep_Pax_Counters(
             system="terminal",
             date_str=date_str,
             CTG_type="A",
-            custom_showup=custom_showup,
+            custom_show_up=custom_show_up,
             custom_counter_rule=custom_counter_rule,
             **kwargs,
         )
         pbar.update(1)
 
-        df_Counters = "disabled, see source" # uncomment below dirty fix
+        df_Counters = "disabled, see source"  # uncomment below dirty fix
 
         # df_Counters = show_up_function(
         #     path_to_schedule=path_to_schedule,
@@ -915,7 +1114,7 @@ def generate_dep_Pax_Counters(
         #     system="check-in",
         #     date_str=date_str,
         #     CTG_type="A",
-        #     custom_showup=custom_showup,
+        #     custom_show_up=custom_show_up,
         #     custom_counter_rule=custom_counter_rule,
         #     **kwargs,
         # )
