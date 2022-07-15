@@ -388,6 +388,15 @@ class SimParam:
 
         self.df_Counters = df_Counters_final
 
+        # we need dct_Counters_change
+        # { airline : series of time/n_counter when change }
+        self.dct_Counters_change = {
+            airline: self.df_Counters[airline].loc[
+                self.df_Counters[airline].shift() != self.df_Counters[airline]
+            ]
+            for airline in self.schedule["Airline Code"].unique()
+        }
+
     def plot_show_up_categories_profiles(self):
         fig, ax = plt.subplots(figsize=(8, 6))
         x = np.linspace(0, 360, 100)
