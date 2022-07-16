@@ -14,7 +14,7 @@ from tqdm import tqdm
 from src.utils.profiles_from_schedule_new import SimParam
 
 FREQ = "5min"
-WINDOW = 1
+WINDOW = 3
 
 
 def minutes_to_hms(minutes):
@@ -278,9 +278,15 @@ class Simulation:
         # option to filter by airline
         if filter_airline != None:
             mask = self.df_result["Airline"] == filter_airline
-            df_result = self.df_result[mask]
+            df_result = self.df_result[mask].copy()
+            # put some dummy values to not bother plotting
+            u = df_result.select_dtypes(include=["datetime"])
+            df_result[u.columns] = u.fillna(pd.Timestamp("2020-10-14 21:40:00"))
+
+            u = df_result.select_dtypes(include=object)
+            df_result[u.columns] = u.fillna(0)
         else:
-            df_result = self.df_result
+            df_result = self.df_result.copy()
 
         # in
         self.plt_in = [
