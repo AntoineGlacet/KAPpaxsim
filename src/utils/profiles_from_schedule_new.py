@@ -264,6 +264,10 @@ class SimParam:
             + self.df_Pax["time"].dt.second.astype(int) / 60
         )
 
+        self.df_Pax["Airline"] = self.df_Pax["Flight Number"].apply(
+            lambda x: x.split(" ", 1)[0]
+        )
+
     def assign_check_in(self):
         # change to parameters, add A/L groups if needed
         start_time = 2.5  # hours before STD for check-in opening
