@@ -39,27 +39,33 @@ class CustomResource(simpy.PriorityResource):
     define a custom resource with extra functions
     """
 
-    def __init__(self, env, startup_capacity: int):
+    def __init__(self, env, startup_capacity: int, airline):
         super().__init__(env, 100)
         self.max_capacity = 100
         self.current_capacity = self.max_capacity
         self.dummy_requests_list = []
-        self.set_capacity(startup_capacity)
-        self.current_capacity = startup_capacity
+
+        self.airline = airline
 
         self.env = env
+
+        self.set_capacity(startup_capacity)
 
     def set_capacity(self, target_capacity):
         # use dummy priority 0 request to manage capacity
         # we need to store the request to be able to release them later
         diff_capa = self.current_capacity - target_capacity
+        # print("current={} ,target={}".format(self.current_capacity, target_capacity))
+
         for i in range(abs(diff_capa)):
             if diff_capa > 0:
                 dummy_request = self.request(priority=0)
                 self.dummy_requests_list.append(dummy_request)
             else:
-                self.release(self.dummy_requests_list[i])
+                self.release(self.dummy_requests_list[-1])
+                self.dummy_requests_list.pop(-1)
         self.current_capacity = target_capacity
+        # print(self.airline, len(self.dummy_requests_list), self.count)
 
     def change_capa_per_schedule(self, serie_Counters_change):
         previous_time = 0
@@ -67,12 +73,10 @@ class CustomResource(simpy.PriorityResource):
             if time == 0:
                 continue
             yield self.env.timeout((time - previous_time) * 5)
+            previous_time = time
             # do I need to use self.env.process?
             self.set_capacity(int(n_counters))
-            previous_time = time
-            # print("time = {} and n_counter = {}".format(time * 5, n_counters))
-            # print("current capa {}".format(self.current_capacity))
-            # print(self.dummy_requests_list)
+            # print("time", time * 5, self.env.now)
 
 
 class Pax:
@@ -198,7 +202,9 @@ class Simulation:
         # Create custon resources
         list_airlines = self.simparam.schedule["Airline Code"].unique()
         self.checkin = {
-            airline: CustomResource(self.env, int(self.dct_Counters_change[airline][0]))
+            airline: CustomResource(
+                self.env, int(self.dct_Counters_change[airline][0]), airline=airline
+            )
             for airline in list_airlines
         }
 
@@ -314,6 +320,7 @@ class Simulation:
                 self.df_result.set_index(self.dct_plot[key][0], drop=False)[
                     self.dct_plot[key][2]
                 ]
+                .dropna()
                 .resample(FREQ)
                 .agg(["max"])
                 .rolling(window=WINDOW, center=True)
