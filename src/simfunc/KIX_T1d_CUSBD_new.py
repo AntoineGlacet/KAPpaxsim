@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 from src.utils.profiles_from_schedule_new import SimParam
 
-FREQ = "15min"
-WINDOW = 4
+FREQ = "5min"
+WINDOW = 1
 
 
 def minutes_to_hms(minutes):
@@ -40,23 +40,17 @@ class CustomResource(simpy.PriorityResource):
     """
 
     def __init__(self, env, startup_capacity: int, airline):
-        super().__init__(env, 100)
-        self.max_capacity = 100
+        self.max_capacity = 200
+        super().__init__(env, self.max_capacity)
         self.current_capacity = self.max_capacity
         self.dummy_requests_list = []
-
-        self.airline = airline
-
         self.env = env
-
         self.set_capacity(startup_capacity)
 
     def set_capacity(self, target_capacity):
         # use dummy priority 0 request to manage capacity
         # we need to store the request to be able to release them later
         diff_capa = self.current_capacity - target_capacity
-        # print("current={} ,target={}".format(self.current_capacity, target_capacity))
-
         for i in range(abs(diff_capa)):
             if diff_capa > 0:
                 dummy_request = self.request(priority=0)
@@ -65,7 +59,6 @@ class CustomResource(simpy.PriorityResource):
                 self.release(self.dummy_requests_list[-1])
                 self.dummy_requests_list.pop(-1)
         self.current_capacity = target_capacity
-        # print(self.airline, len(self.dummy_requests_list), self.count)
 
     def change_capa_per_schedule(self, serie_Counters_change):
         previous_time = 0
@@ -74,9 +67,7 @@ class CustomResource(simpy.PriorityResource):
                 continue
             yield self.env.timeout((time - previous_time) * 5)
             previous_time = time
-            # do I need to use self.env.process?
             self.set_capacity(int(n_counters))
-            # print("time", time * 5, self.env.now)
 
 
 class Pax:
@@ -96,39 +87,29 @@ class Pax:
         self.std = row["Scheduled Time"]
         self.show_up_time = row["time"]
         # to put inside of simparam!
-        self.type = "tradi"
+        self.type = row["pax_type"]
 
     def go_to_process(self, process_str: str):
         """
         Pax queues and do process
         Result stored to pax.row
         """
-        with self.simulation.resources[process_str].request() as request:
-            self.row["{}_queue_length".format(process_str)] = len(
-                self.simulation.resources[process_str].queue
-            )
+        if process_str == "checkin":
+            resource = self.simulation.checkin[self.airline]
+        else:
+            resource = self.simulation.resources[process_str]
+
+        with resource.request(priority=2) as request:
+            # store queue length and start of queue time
+            self.row["{}_queue_length".format(process_str)] = len(resource.queue)
             self.row["start_{}_queue".format(process_str)] = self.env.now
+            # request usage start queueing
             yield request
+            # store end of the queue time
             self.row["end_{}_queue".format(process_str)] = self.env.now
+            # do the process
             yield self.env.process(self.do_process(process_str))
-
-            self.row["end_{}_process".format(process_str)] = self.env.now
-
-    def go_to_checkin(self):
-        """
-        Pax queues and do checkin
-        Result stored to pax.row
-        """
-        process_str = "checkin"
-        with self.simulation.checkin[self.airline].request(priority=2) as request:
-            self.row["{}_queue_length".format(process_str)] = len(
-                self.simulation.checkin[self.airline].queue
-            )
-            self.row["start_{}_queue".format(process_str)] = self.env.now
-            yield request
-            self.row["end_{}_queue".format(process_str)] = self.env.now
-            yield self.env.process(self.do_process(process_str))
-
+            # store end of process time
             self.row["end_{}_process".format(process_str)] = self.env.now
 
     def do_process(self, process_str: str):
@@ -143,6 +124,9 @@ class Pax:
         """
         std = self.std.hour * 60 + self.std.minute + self.std.second / 60
         t = std - time_to_std - self.env.now
+        # if std < self.env.now is that flight is after midnight and pax arrives before midnight
+        if std - self.env.now < 0:
+            t += 24 * 60
         if t > 0:
             yield self.env.timeout(t)
 
@@ -166,7 +150,7 @@ class Pax:
                 yield self.env.process(self.go_to_process(process_str))
 
             yield self.env.process(self.wait_opening(2.5 * 60))
-            yield self.env.process(self.go_to_checkin())
+            yield self.env.process(self.go_to_process("checkin"))
 
 
 class Simulation:
@@ -199,7 +183,7 @@ class Simulation:
         make their capacity vary according to df_Counters info
         we use dummy priority 0 (top) requests to block counters
         """
-        # Create custon resources
+        # Create custom resources
         list_airlines = self.simparam.schedule["Airline Code"].unique()
         self.checkin = {
             airline: CustomResource(
@@ -229,17 +213,22 @@ class Simulation:
                 self.env.run(until=i)
                 runpbar.update(1)
 
-    def format_df_result(self):
+    def format_df_result(self, filter_airline: str = None):
         # concatenate pax rows
         self.df_result = pd.concat(
             [pax.row for pax in self.pax_list], axis=1
         ).transpose()
 
+        # add airline col
+        self.df_result["Airline"] = self.df_result["Flight Number"].apply(
+            lambda x: x.split(" ", 1)[0]
+        )
+
         # sampling ratio
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(FREQ)
 
         # list for iteration
-        list_process_all = ["kiosk", "checkin"]
+        list_process_all = ["kiosk", "security", "checkin", "CUSBD"]
 
         # different types of columns
         datetime_columns_types = [
@@ -286,10 +275,17 @@ class Simulation:
             key: [plot.format(key) for plot in list_plot] for key in list_process_all
         }
 
+        # option to filter by airline
+        if filter_airline != None:
+            mask = self.df_result["Airline"] == filter_airline
+            df_result = self.df_result[mask]
+        else:
+            df_result = self.df_result
+
         # in
         self.plt_in = [
             (
-                self.df_result.set_index(self.dct_plot[key][0], drop=False)["Pax"]
+                df_result.set_index(self.dct_plot[key][0], drop=False)["Pax"]
                 .resample(FREQ)
                 .agg(["sum"])
                 .rolling(window=WINDOW, center=True)
@@ -303,7 +299,7 @@ class Simulation:
         # out
         self.plt_out = [
             (
-                self.df_result.set_index(self.dct_plot[key][1], drop=False)["Pax"]
+                df_result.set_index(self.dct_plot[key][1], drop=False)["Pax"]
                 .resample(FREQ)
                 .agg(["sum"])
                 .rolling(window=WINDOW, center=True)
@@ -317,7 +313,7 @@ class Simulation:
         # queue length
         self.plt_queue_length = [
             (
-                self.df_result.set_index(self.dct_plot[key][0], drop=False)[
+                df_result.set_index(self.dct_plot[key][0], drop=False)[
                     self.dct_plot[key][2]
                 ]
                 .dropna()
@@ -332,7 +328,7 @@ class Simulation:
         # queue duration
         self.plt_queue_duration = [
             (
-                self.df_result.set_index(self.dct_plot[key][0], drop=False)[
+                df_result.set_index(self.dct_plot[key][0], drop=False)[
                     self.dct_plot[key][3]
                 ]
                 .apply(lambda x: x.total_seconds() / 60)
@@ -347,7 +343,7 @@ class Simulation:
         # histograms of queue duration and queue length
         self.dct_hist_wait_time = {
             key: (
-                self.df_result[self.df_result[self.dct_plot[key][0]].notnull()][
+                df_result[df_result[self.dct_plot[key][0]].notnull()][
                     self.dct_plot[key][3]
                 ].apply(lambda x: x.total_seconds() / 60)
             )
@@ -356,7 +352,7 @@ class Simulation:
 
         self.dct_hist_queue_length = {
             key: (
-                self.df_result[self.df_result[self.dct_plot[key][0]].notnull()][
+                df_result[df_result[self.dct_plot[key][0]].notnull()][
                     self.dct_plot[key][2]
                 ]
             )
