@@ -13,9 +13,6 @@ from tqdm import tqdm
 
 from src.utils.profiles_from_schedule_new import SimParam
 
-FREQ = "5min"
-WINDOW = 3
-
 
 def minutes_to_hms(minutes):
     """
@@ -88,42 +85,51 @@ class Pax:
         self.show_up_time = row["time"]
         # to put inside of simparam!
         self.type = row["pax_type"]
+        self.process_sequence = self.simulation.simparam.dct_process_sequence[
+            self.type
+        ][0]
+        self.hour_to_std = self.simulation.simparam.dct_process_sequence[self.type][1][
+            "hour_to_std"
+        ]
 
     def go_to_process(self, process_str: str):
         """
         Pax queues and do process
         Result stored to pax.row
         """
-        if process_str == "checkin":
-            resource = self.simulation.checkin[self.airline]
+        if process_str == "wait_opening":
+            yield self.env.process(self.wait_opening())
         else:
-            resource = self.simulation.resources[process_str]
+            if process_str == "checkin":
+                resource = self.simulation.checkin[self.airline]
+            else:
+                resource = self.simulation.resources[process_str]
 
-        with resource.request(priority=2) as request:
-            # store queue length and start of queue time
-            self.row["{}_queue_length".format(process_str)] = len(resource.queue)
-            self.row["start_{}_queue".format(process_str)] = self.env.now
-            # request usage start queueing
-            yield request
-            # store end of the queue time
-            self.row["end_{}_queue".format(process_str)] = self.env.now
-            # do the process
-            yield self.env.process(self.do_process(process_str))
-            # store end of process time
-            self.row["end_{}_process".format(process_str)] = self.env.now
+            with resource.request(priority=2) as request:
+                # store queue length and start of queue time
+                self.row["{}_queue_length".format(process_str)] = len(resource.queue)
+                self.row["start_{}_queue".format(process_str)] = self.env.now
+                # request usage start queueing
+                yield request
+                # store end of the queue time
+                self.row["end_{}_queue".format(process_str)] = self.env.now
+                # do the process
+                yield self.env.process(self.do_process(process_str))
+                # store end of process time
+                self.row["end_{}_process".format(process_str)] = self.env.now
 
     def do_process(self, process_str: str):
         """Pax does process, simple timeout"""
         Pt = self.simulation.simparam.dct_processes[process_str] / 60
         yield self.env.timeout(Pt)
 
-    def wait_opening(self, time_to_std: float):
+    def wait_opening(self):
         """
         wait for time_to_std before STD before going to next step
         record results!
         """
         std = self.std.hour * 60 + self.std.minute + self.std.second / 60
-        t = std - time_to_std - self.env.now
+        t = std - self.hour_to_std * 60 - self.env.now
         # if std < self.env.now is that flight is after midnight and pax arrives before midnight
         if std - self.env.now < 0:
             t += 24 * 60
@@ -134,23 +140,9 @@ class Pax:
         # advance sim time to pax show-up
         yield self.env.timeout(self.row["minutes"])
 
-        if self.type == "CUSBD":
-            process_sequence = ["kiosk", "security"]
-
-            for process_str in process_sequence:
-                yield self.env.process(self.go_to_process(process_str))
-
-            yield self.env.process(self.wait_opening(2.5 * 60))
-            yield self.env.process(self.go_to_process("CUSBD"))
-
-        if self.type == "tradi":
-            process_sequence = ["kiosk"]
-
-            for process_str in process_sequence:
-                yield self.env.process(self.go_to_process(process_str))
-
-            yield self.env.process(self.wait_opening(2.5 * 60))
-            yield self.env.process(self.go_to_process("checkin"))
+        # do process successively
+        for process_str in self.process_sequence:
+            yield self.env.process(self.go_to_process(process_str))
 
 
 class Simulation:
@@ -213,7 +205,9 @@ class Simulation:
                 self.env.run(until=i)
                 runpbar.update(1)
 
-    def format_df_result(self, filter_airline: str = None):
+    def format_df_result(
+        self, filter_airline: str = None, freq: str = "5min", win: int = 3
+    ):
         # concatenate pax rows
         self.df_result = pd.concat(
             [pax.row for pax in self.pax_list], axis=1
@@ -225,10 +219,10 @@ class Simulation:
         )
 
         # sampling ratio
-        ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(FREQ)
+        ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
 
         # list for iteration
-        list_process_all = ["kiosk", "security", "checkin", "CUSBD"]
+        list_process_all = ["kiosk", "checkin", "CUSBD", "security"]
 
         # different types of columns
         datetime_columns_types = [
@@ -277,14 +271,16 @@ class Simulation:
 
         # option to filter by airline
         if filter_airline != None:
-            mask = self.df_result["Airline"] == filter_airline
+            if type(filter_airline) != list:
+                filter_airline = [filter_airline]
+            mask = self.df_result["Airline"].isin(filter_airline)
             df_result = self.df_result[mask].copy()
             # put some dummy values to not bother plotting
             u = df_result.select_dtypes(include=["datetime"])
-            df_result[u.columns] = u.fillna(pd.Timestamp("2020-10-14 21:40:00"))
+            df_result.loc[0, u.columns] = pd.Timestamp("2020-10-14 21:40:00")
 
             u = df_result.select_dtypes(include=object)
-            df_result[u.columns] = u.fillna(0)
+            df_result.loc[0, u.columns] = 0
         else:
             df_result = self.df_result.copy()
 
@@ -292,9 +288,9 @@ class Simulation:
         self.plt_in = [
             (
                 df_result.set_index(self.dct_plot[key][0], drop=False)["Pax"]
-                .resample(FREQ)
+                .resample(freq)
                 .agg(["sum"])
-                .rolling(window=WINDOW, center=True)
+                .rolling(window=win, center=True)
                 .mean()
                 .dropna()
                 .apply(lambda x: x * ratio_sampling)
@@ -306,9 +302,9 @@ class Simulation:
         self.plt_out = [
             (
                 df_result.set_index(self.dct_plot[key][1], drop=False)["Pax"]
-                .resample(FREQ)
+                .resample(freq)
                 .agg(["sum"])
-                .rolling(window=WINDOW, center=True)
+                .rolling(window=win, center=True)
                 .mean()
                 .dropna()
                 .apply(lambda x: x * ratio_sampling)
@@ -323,9 +319,9 @@ class Simulation:
                     self.dct_plot[key][2]
                 ]
                 .dropna()
-                .resample(FREQ)
+                .resample(freq)
                 .agg(["max"])
-                .rolling(window=WINDOW, center=True)
+                .rolling(window=win, center=True)
                 .mean()
             )
             for key in [*self.dct_plot]
@@ -338,9 +334,9 @@ class Simulation:
                     self.dct_plot[key][3]
                 ]
                 .apply(lambda x: x.total_seconds() / 60)
-                .resample(FREQ)
+                .resample(freq)
                 .agg(["max"])
-                .rolling(window=WINDOW, center=True)
+                .rolling(window=win, center=True)
                 .mean()
             )
             for key in [*self.dct_plot]
@@ -366,6 +362,8 @@ class Simulation:
         }
 
         self.plt_hist_wait_time = [value for value in self.dct_hist_wait_time.values()]
+
+        return self
 
     def plot_result(self):
         n_graph = len([*self.dct_plot])
@@ -409,6 +407,14 @@ class Simulation:
             )
 
             sns.histplot(self.plt_hist_wait_time[i], ax=axs[i, 1], bins=30)
+            axs[i, 1].text(
+                0.7,
+                0.9,
+                "total = {:,} Pax".format(self.plt_hist_wait_time[i].count()),
+                horizontalalignment="center",
+                verticalalignment="center",
+                transform=axs[i, 1].transAxes,
+            )
 
             axs[i, 0].set(
                 ylabel="Pax/hr or Pax",
