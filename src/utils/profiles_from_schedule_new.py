@@ -12,6 +12,8 @@ from scipy.interpolate import interp1d
 from scipy.stats import norm
 from tqdm import tqdm
 
+import seaborn as sns
+
 
 class SimParam:
     """
@@ -358,6 +360,7 @@ class SimParam:
         }
 
     def plot_show_up_categories_profiles(self):
+        sns.set_theme(style="whitegrid")
         fig, ax = plt.subplots(figsize=(8, 6))
         x = np.linspace(0, 360, 100)
 
@@ -373,10 +376,9 @@ class SimParam:
 
         plt.show()
 
-    def plot_df_Pax(self, by_pax_type: bool = False):
-        FREQ = "5min"
-        WIN = 12
-        ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(FREQ)
+    def plot_df_Pax(self, by_pax_type: bool = False, freq: str = "5min", win=12):
+        sns.set_theme(style="whitegrid")
+        ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
 
         if by_pax_type == True:
             pax_types = self.df_Pax["pax_type"].unique()
@@ -385,9 +387,9 @@ class SimParam:
                     self.df_Pax["pax_type"].isin(pax_types[0 : i + 1])
                 ]
                 .set_index("time", drop=False)["Pax"]
-                .resample(FREQ)
+                .resample(freq)
                 .agg(["sum"])
-                .rolling(window=WIN, center=True)
+                .rolling(window=win, center=True)
                 .mean()
                 .dropna()
                 .apply(lambda x: x * ratio_sampling)
@@ -397,9 +399,9 @@ class SimParam:
         else:
             plot = (
                 self.df_Pax.set_index("time", drop=False)["Pax"]
-                .resample(FREQ)
+                .resample(freq)
                 .agg(["sum"])
-                .rolling(window=WIN, center=True)
+                .rolling(window=win, center=True)
                 .mean()
                 .dropna()
                 .apply(lambda x: x * ratio_sampling)
@@ -441,6 +443,54 @@ class SimParam:
         ax.legend(loc="upper left", frameon=False)
 
         plt.show()
+
+    def plot_std(self, freq: str = "1H", win=1):
+        sns.set_theme(style="whitegrid")
+
+        ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
+
+        # plot param
+        xmin = pd.to_datetime("2020-10-13 00:00:00")
+        xmax = pd.to_datetime("2020-10-14 00:00:00")
+        hours = mdates.HourLocator(interval=1)
+        half_hours = mdates.MinuteLocator(byminute=[0, 30], interval=1)
+        h_fmt = mdates.DateFormatter("%H:%M")
+        width = 0.7 * (xmax - xmin) / 24
+        offset = pd.Timedelta("30min")
+
+        # formatting
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.set_xlim((xmin, xmax))
+        ax.set_xticks(pd.date_range(xmin, xmax, freq="30min"))
+        ax.set_xticklabels(
+            ax.get_xticks(), rotation=45, **{"horizontalalignment": "right"}
+        )
+        ax.xaxis.set_major_locator(hours)
+        ax.xaxis.set_major_formatter(h_fmt)
+        ax.xaxis.set_minor_locator(half_hours)
+
+        # calculation
+        plot = (
+            self.schedule.set_index("Scheduled Time", drop=False)["PAX_SUM FC"]
+            .resample(freq)
+            .agg(["sum"])
+            .rolling(window=win, center=True)
+            .mean()
+            .dropna()
+            .apply(lambda x: x * ratio_sampling)
+        )
+        # plot
+        ax.bar(x=plot.index + offset, height=plot["sum"], width=width, align="center")
+        ax.text(
+            0.7,
+            0.9,
+            "total = {:,} Pax".format(plot["sum"].sum()),
+            horizontalalignment="center",
+            verticalalignment="center",
+            transform=ax.transAxes,
+        )
+        plt.show()
+        return plot
 
     def plot_std_profiles(self):
         pass
