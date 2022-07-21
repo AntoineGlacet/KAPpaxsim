@@ -48,7 +48,7 @@ class SimParam:
 
     def schedule_from_path(self, path: Path):
         """
-        table should be formatted with following columns
+        excel file should be formatted with following columns
         | A/D | T1/T2(MM/9C/7C/TW) | Intl Regions | Category(P/C/O) | Sector |
         | Flight Number | SEATS FC | PAX_SUM FC | Flight Date | Scheduled Time |
         """
@@ -58,7 +58,7 @@ class SimParam:
             sheet_name=r"schedule",
             header=0,
         )
-        self.schedule_origin = self.schedule
+        self.schedule_origin = self.schedule.copy()
 
         return self
 
