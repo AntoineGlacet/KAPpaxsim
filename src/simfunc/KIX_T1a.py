@@ -59,12 +59,8 @@ def KIX_T1a(
 
     # Creating some useful data
 
-    df_Pax["Flight Number"] = df_Pax["Flight Number"].replace(
-        ["JX821"], "JX 821"
-    )
-    df_Pax["Flight Number"] = df_Pax["Flight Number"].replace(
-        ["NS*****"], "NS *****"
-    )
+    df_Pax["Flight Number"] = df_Pax["Flight Number"].replace(["JX821"], "JX 821")
+    df_Pax["Flight Number"] = df_Pax["Flight Number"].replace(["NS*****"], "NS *****")
 
     df_Pax["airline"] = df_Pax["Flight Number"].apply(lambda x: x.split()[0])
     list_flight = df_Pax["Flight Number"].unique()
@@ -101,9 +97,7 @@ def KIX_T1a(
             self.quarantine = simpy.PriorityResource(env, N_quarantine)
             self.Pt_quarantine = Pt_quarantine
 
-            self.immigration_counter = simpy.Resource(
-                env, N_immigration_counter
-            )
+            self.immigration_counter = simpy.Resource(env, N_immigration_counter)
             self.Pt_immigration_counter = Pt_immigration_counter
 
             self.immigration_self = simpy.Resource(env, N_immigration_self)
@@ -119,29 +113,29 @@ def KIX_T1a(
             self.Pt_customs_self = Pt_customs_self
 
         def quarantine_check(self, Pax):
-            """ quarantine check """
+            """quarantine check"""
             yield self.env.timeout(Pt_quarantine)
 
         def immigration_counter_check(self, Pax):
-            """ immigration counter check """
+            """immigration counter check"""
             yield self.env.timeout(Pt_immigration_counter)
 
         def immigration_self_check(self, Pax):
-            """ immigration self check """
+            """immigration self check"""
             yield self.env.timeout(Pt_immigration_self)
 
         # to be improved, they should wait for flight STA + some duration + a little random
         # or this could be done with another show up profile
         def bag_claim_wait(self, Pax):
-            """ bag_claim check """
+            """bag_claim check"""
             yield self.env.timeout(Wt_bag_claim)
 
         def customs_counter_check(self, Pax):
-            """ customs counter check """
+            """customs counter check"""
             yield self.env.timeout(Pt_customs_counter)
 
         def customs_self_check(self, Pax):
-            """ customs self check """
+            """customs self check"""
             yield self.env.timeout(Pt_customs_self)
 
     # ======================================= Passenger journey for each type of Pax=======================================
@@ -168,26 +162,18 @@ def KIX_T1a(
             df_result.loc[index_Pax, "end_quarantine_process"] = env.now
 
         with arr.immigration_counter.request() as request:
-            df_result.loc[
-                index_Pax, "immigration_counter_queue_length"
-            ] = len(arr.immigration_counter.queue)
-            df_result.loc[
-                index_Pax, "start_immigration_counter_queue"
-            ] = env.now
+            df_result.loc[index_Pax, "immigration_counter_queue_length"] = len(
+                arr.immigration_counter.queue
+            )
+            df_result.loc[index_Pax, "start_immigration_counter_queue"] = env.now
             yield request
-            df_result.loc[
-                index_Pax, "end_immigration_counter_queue"
-            ] = env.now
+            df_result.loc[index_Pax, "end_immigration_counter_queue"] = env.now
             yield env.process(arr.immigration_counter_check(name))
-            df_result.loc[
-                index_Pax, "end_immigration_counter_process"
-            ] = env.now
+            df_result.loc[index_Pax, "end_immigration_counter_process"] = env.now
 
         # modified the end_claim_queue for good reporting
         with arr.bag_claim.request() as request:
-            df_result.loc[
-                index_Pax, "bag_claim_queue_length"
-            ] = arr.bag_claim.count
+            df_result.loc[index_Pax, "bag_claim_queue_length"] = arr.bag_claim.count
             df_result.loc[index_Pax, "start_bag_claim_queue"] = env.now
             yield request
             yield env.process(arr.bag_claim_wait(name))
@@ -237,9 +223,7 @@ def KIX_T1a(
 
         # modified the end_claim_queue for good reporting
         with arr.bag_claim.request() as request:
-            df_result.loc[
-                index_Pax, "bag_claim_queue_length"
-            ] = arr.bag_claim.count
+            df_result.loc[index_Pax, "bag_claim_queue_length"] = arr.bag_claim.count
             df_result.loc[index_Pax, "start_bag_claim_queue"] = env.now
             yield request
             yield env.process(arr.bag_claim_wait(name))
@@ -289,9 +273,7 @@ def KIX_T1a(
 
         # modified the end_claim_queue for good reporting
         with arr.bag_claim.request() as request:
-            df_result.loc[
-                index_Pax, "bag_claim_queue_length"
-            ] = arr.bag_claim.count
+            df_result.loc[index_Pax, "bag_claim_queue_length"] = arr.bag_claim.count
             df_result.loc[index_Pax, "start_bag_claim_queue"] = env.now
             yield request
             yield env.process(arr.bag_claim_wait(name))
@@ -330,20 +312,14 @@ def KIX_T1a(
             df_result.loc[index_Pax, "end_quarantine_process"] = env.now
 
         with arr.immigration_counter.request() as request:
-            df_result.loc[
-                index_Pax, "immigration_counter_queue_length"
-            ] = len(arr.immigration_counter.queue)
-            df_result.loc[
-                index_Pax, "start_immigration_counter_queue"
-            ] = env.now
+            df_result.loc[index_Pax, "immigration_counter_queue_length"] = len(
+                arr.immigration_counter.queue
+            )
+            df_result.loc[index_Pax, "start_immigration_counter_queue"] = env.now
             yield request
-            df_result.loc[
-                index_Pax, "end_immigration_counter_queue"
-            ] = env.now
+            df_result.loc[index_Pax, "end_immigration_counter_queue"] = env.now
             yield env.process(arr.immigration_counter_check(name))
-            df_result.loc[
-                index_Pax, "end_immigration_counter_process"
-            ] = env.now
+            df_result.loc[index_Pax, "end_immigration_counter_process"] = env.now
 
         with arr.customs_counter.request() as request:
             df_result.loc[index_Pax, "customs_counter_queue_length"] = len(
@@ -396,16 +372,13 @@ def KIX_T1a(
                     if element in list_1:
                         list_1.remove(element)
 
-            start_special_pax_index = int(
-                N_pax_flight * start_special_pax_ratio
-            )
+            start_special_pax_index = int(N_pax_flight * start_special_pax_ratio)
             end_special_pax_index = int(N_pax_flight * end_special_pax_ratio)
 
             flight_index_list = [i for i in range(1, N_pax_flight)]
             flight_index_list_orig = flight_index_list.copy()
             flight_index_list = [
-                i
-                for i in range(start_special_pax_index, end_special_pax_index)
+                i for i in range(start_special_pax_index, end_special_pax_index)
             ]
 
             random.shuffle(flight_index_list)
@@ -511,9 +484,7 @@ def KIX_T1a(
             .sort_values(["minutes"])
             .reset_index(drop=True)
         )
-        env.process(
-            Pax_generator(env, arrival, flight, df_Pax_flight, index_total)
-        )
+        env.process(Pax_generator(env, arrival, flight, df_Pax_flight, index_total))
         index_total += len(df_Pax_flight["minutes"])
 
     # Execute!
@@ -521,17 +492,13 @@ def KIX_T1a(
 
     if show_loading == True:
         if call_n_iter is not None and totalpbar is not None:
-            with tqdm(
-                total=end_time - 1, desc="Simulation running..."
-            ) as runpbar:
+            with tqdm(total=end_time - 1, desc="Simulation running...") as runpbar:
                 for i in range(1, end_time):
                     env.run(until=i)
                     runpbar.update(1)
                     totalpbar.update(1)
         else:
-            with tqdm(
-                total=end_time - 1, desc="Simulation running..."
-            ) as runpbar:
+            with tqdm(total=end_time - 1, desc="Simulation running...") as runpbar:
                 for i in range(1, end_time):
                     env.run(until=i)
                     runpbar.update(1)
@@ -585,9 +552,7 @@ def KIX_T1a(
     # add "Pax_N"
     df_result["Pax_N"] = 1
     # add 'flight_number'
-    df_result["flight_number"] = df_result["Pax_ID"].map(
-        lambda x: x.split("_")[2]
-    )
+    df_result["flight_number"] = df_result["Pax_ID"].map(lambda x: x.split("_")[2])
     # add "STD" eventually, this may be done inside the simulation as we will use STD
     # to determine who has missed his flight and flag them as such
     df_result = (
@@ -619,8 +584,7 @@ def KIX_T1a(
 
     # Create waiting times
     df_result["wait_time_quarantine"] = (
-        df_result["end_quarantine_queue"]
-        - df_result["start_quarantine_queue"]
+        df_result["end_quarantine_queue"] - df_result["start_quarantine_queue"]
     ).fillna(datetime.timedelta(0))
 
     df_result["wait_time_bag_claim"] = (
@@ -633,8 +597,7 @@ def KIX_T1a(
     ).fillna(datetime.timedelta(0))
 
     df_result["wait_time_customs_self"] = (
-        df_result["end_customs_self_queue"]
-        - df_result["start_customs_self_queue"]
+        df_result["end_customs_self_queue"] - df_result["start_customs_self_queue"]
     ).fillna(datetime.timedelta(0))
 
     df_result["wait_time_immigration_counter"] = (
@@ -709,11 +672,7 @@ def KIX_T1a(
             .apply(lambda x: x * ratio_sampling)
         )
         if not all(
-            pd.isnull(
-                df_result.set_index(dct_plot[key][0], drop=False)[
-                    "Pax_N"
-                ].index
-            )
+            pd.isnull(df_result.set_index(dct_plot[key][0], drop=False)["Pax_N"].index)
         )
         else (
             df_result.set_index(dct_plot[key][0], drop=False)["Pax_N"]
@@ -744,9 +703,7 @@ def KIX_T1a(
     # queue length
     plt_queue_length = [
         (
-            df_result.set_index(dct_plot[key][0], drop=False)[
-                dct_plot[key][2]
-            ]
+            df_result.set_index(dct_plot[key][0], drop=False)[dct_plot[key][2]]
             .resample(FREQ)
             .agg(["max"])
             .rolling(window=WINDOW, center=True)
@@ -758,9 +715,7 @@ def KIX_T1a(
     # queue duration
     plt_queue_duration = [
         (
-            df_result.set_index(dct_plot[key][0], drop=False)[
-                dct_plot[key][3]
-            ]
+            df_result.set_index(dct_plot[key][0], drop=False)[dct_plot[key][3]]
             .apply(lambda x: x.total_seconds() / 60)
             .resample(FREQ)
             .agg(["max"])
@@ -773,26 +728,24 @@ def KIX_T1a(
 
     plt_hist_wait_time = [
         (
-            df_result[df_result[dct_plot[key][0]].notnull()][
-                dct_plot[key][3]
-            ].apply(lambda x: x.total_seconds() / 60)
+            df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][3]].apply(
+                lambda x: x.total_seconds() / 60
+            )
         )
         for key in [*dct_plot]
     ]
 
     dct_hist_wait_time = {
         key: (
-            df_result[df_result[dct_plot[key][0]].notnull()][
-                dct_plot[key][3]
-            ].apply(lambda x: x.total_seconds() / 60)
+            df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][3]].apply(
+                lambda x: x.total_seconds() / 60
+            )
         )
         for key in [*dct_plot]
     }
 
     dct_hist_queue_length = {
-        key: (
-            df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][2]]
-        )
+        key: (df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][2]])
         for key in [*dct_plot]
     }
 
@@ -820,9 +773,7 @@ def KIX_T1a(
         for i in range(n_graph):
             axs[i, 0].plot(plt_in[i], label="in", lw=2)
             axs[i, 0].plot(plt_out[i], label="out", lw=2)
-            axs[i, 0].plot(
-                plt_queue_length[i], label="queue length", ls="--", lw=1
-            )
+            axs[i, 0].plot(plt_queue_length[i], label="queue length", ls="--", lw=1)
             ax2[i].plot(
                 plt_queue_duration[i],
                 label="queue duration",
@@ -924,8 +875,7 @@ def KIX_T1a(
         writer.save()
 
     list_kpi_queue_length = [
-        list(plt_queue_length[i]["max"].replace(np.nan, 0))
-        for i in range(n_graph)
+        list(plt_queue_length[i]["max"].replace(np.nan, 0)) for i in range(n_graph)
     ]
     list_kpi_wait_time = [list(plt_hist_wait_time[i]) for i in range(n_graph)]
 
@@ -948,9 +898,7 @@ def KIX_T1a(
         for i in range(n_graph)
     ]
 
-    list_KPI_run = [
-        [kpi_queue_length[i], kpi_wait_time[i]] for i in range(n_graph)
-    ]
+    list_KPI_run = [[kpi_queue_length[i], kpi_wait_time[i]] for i in range(n_graph)]
 
     return (
         df_result,
