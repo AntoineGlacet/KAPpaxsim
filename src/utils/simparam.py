@@ -60,6 +60,8 @@ class SimParam:
         )
         self.schedule_origin = self.schedule
 
+        return self
+
     def schedule_from_df(self, dataframe: pd.DataFrame):
         """
         table should be formatted with following columns
@@ -68,6 +70,8 @@ class SimParam:
         """
         self.schedule = dataframe.copy()
         self.schedule_origin = self.schedule
+
+        return self
 
     def schedule_cleanup(self):
         """
@@ -96,6 +100,8 @@ class SimParam:
         # store for reference
         self.schedule_clean = self.schedule
 
+        return self
+
     def schedule_filter(
         self,
         direction: str = "D",
@@ -117,6 +123,8 @@ class SimParam:
         filtered_data = filtered_data.reset_index()
         self.schedule = filtered_data
         self.schedule_filtered = self.schedule
+
+        return self
 
     def assign_flight_show_up_category_default(self):
         """
@@ -142,6 +150,8 @@ class SimParam:
             self.schedule.loc[i, "show_up_category"] = category
 
         self.schedule_show_up_cat = self.schedule
+
+        return self
 
     def define_norm_show_up(self, df_show_up_profiles: pd.DataFrame):
         # import show-up from a df
@@ -172,6 +182,8 @@ class SimParam:
             name: interp1d(self.dct_f_show_up[name](x), x, kind="linear")
             for name in self.dct_f_show_up
         }
+
+        return self
 
     def show_up_from_file(self):
         """
@@ -205,6 +217,8 @@ class SimParam:
 
         self.df_show_up_profiles = pd.DataFrame.from_dict(dct_show_up_profiles)
         self.define_norm_show_up(self.df_show_up_profiles)
+
+        return self
 
     def assign_show_up(self):
         # we need a column "show_up_category" in the schedule dataframe
@@ -252,6 +266,8 @@ class SimParam:
         self.df_Pax["Pax"] = 1
         self.prepare_schedule_for_simulation()
 
+        return self
+
     def prepare_schedule_for_simulation(self):
         self.df_Pax["minutes"] = (
             self.df_Pax["time"].dt.hour.astype(int) * 60
@@ -262,6 +278,8 @@ class SimParam:
         self.df_Pax["Airline"] = self.df_Pax["Flight Number"].apply(
             lambda x: x.split(" ", 1)[0]
         )
+
+        return self
 
     def assign_check_in(
         self,
@@ -358,6 +376,8 @@ class SimParam:
             ]
             for airline in self.schedule["Airline Code"].unique()
         }
+
+        return self
 
     def plot_show_up_categories_profiles(self):
         sns.set_theme(style="whitegrid")
@@ -490,6 +510,7 @@ class SimParam:
             transform=ax.transAxes,
         )
         plt.show()
+        
         return plot
 
     def plot_std_profiles(self):
