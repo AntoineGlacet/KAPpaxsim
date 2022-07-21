@@ -7,12 +7,11 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from decouple import AutoConfig
 from scipy.interpolate import interp1d
 from scipy.stats import norm
 from tqdm import tqdm
-
-import seaborn as sns
 
 
 class SimParam:
@@ -510,7 +509,7 @@ class SimParam:
             transform=ax.transAxes,
         )
         plt.show()
-        
+
         return plot
 
     def plot_std_profiles(self):
