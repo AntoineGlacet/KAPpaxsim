@@ -463,9 +463,19 @@ class SimParam:
 
         plt.show()
 
-    def plot_std(self, freq: str = "1H", win=1):
-        sns.set_theme(style="whitegrid")
+    def plot_std(self, compare_with=None, freq: str = "1H", win=1):
 
+        nb_bar = 1
+        # option to compare with other std_plot
+        if not (compare_with is None):
+            if type(compare_with) != list:
+                compare_with = [compare_with]
+            nb_bar += len(compare_with)
+        else:
+            compare_with = []
+
+        sns.set_theme(style="whitegrid")
+        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
 
         # plot param
@@ -474,8 +484,8 @@ class SimParam:
         hours = mdates.HourLocator(interval=1)
         half_hours = mdates.MinuteLocator(byminute=[0, 30], interval=1)
         h_fmt = mdates.DateFormatter("%H:%M")
-        width = 0.7 * (xmax - xmin) / 24
-        offset = pd.Timedelta("30min")
+        width_hour = (xmax - xmin) / 24
+        width_bar = 0.7 * width_hour / nb_bar
 
         # formatting
         fig, ax = plt.subplots(figsize=(8, 5))
@@ -498,22 +508,30 @@ class SimParam:
             .dropna()
             .apply(lambda x: x * ratio_sampling)
         )
+
+        compare_with.append(plot)
+
         # plot
-        ax.bar(x=plot.index + offset, height=plot["sum"], width=width, align="center")
-        ax.text(
-            0.7,
-            0.9,
-            "total = {:,} Pax".format(plot["sum"].sum()),
-            horizontalalignment="center",
-            verticalalignment="center",
-            transform=ax.transAxes,
-        )
+        for index, ploti in enumerate(compare_with):
+            interval = width_hour / (nb_bar + 1)
+            x = ploti.index + (1 + index) * interval
+            width = width_bar
+            ax.bar(
+                x=x,
+                height=ploti["sum"],
+                width=width,
+                align="center",
+                color=colors[index],
+            )
+            ax.text(
+                0.15,
+                0.95 - index * 0.05,
+                "total = {:,} Pax".format(ploti["sum"].sum()),
+                horizontalalignment="center",
+                verticalalignment="center",
+                transform=ax.transAxes,
+                color=colors[index],
+            )
         plt.show()
 
         return plot
-
-    def plot_std_profiles(self):
-        pass
-
-    def plot_show_up_profiles(self):
-        pass
