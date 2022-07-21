@@ -11,7 +11,7 @@ import seaborn as sns
 import simpy
 from tqdm import tqdm
 
-from src.utils.profiles_from_schedule_new import SimParam
+from src.utils.simparam import SimParam
 
 
 def minutes_to_hms(minutes):
@@ -192,11 +192,15 @@ class Simulation:
                 )
             )
 
+        return self
+
     def generate_pax(self):
         # generate a Pax for each pax of df_Pax
         self.pax_list = [Pax(self, row) for _, row in self.simparam.df_Pax.iterrows()]
         for pax in self.pax_list:
             self.env.process(pax.depart())
+
+        return self
 
     def run(self, end_time=1440):
         # run simulation for a 24h
