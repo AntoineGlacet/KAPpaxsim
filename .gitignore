@@ -2,9 +2,6 @@
 __pycache__/
 *.py[cod]
 
-# isort
-.isort.cfg
-
 # C extensions
 *.so
 
@@ -77,19 +74,6 @@ target/
 
 # Jupyter NB Checkpoints
 .ipynb_checkpoints/
-
-# exclude notebook with outputs (keep tree)
-notebooks/full
-!notebooks/full/.gitkeep
-
-# exclude data from source control by default
-/data
-
-# keep data tree structure
-!data/interim/.gitkeep
-!data/processed/.gitkeep
-!data/raw/.gitkeep
-!data/secret/.gitkeep
 
 # Mac OS-specific storage files
 .DS_Store
