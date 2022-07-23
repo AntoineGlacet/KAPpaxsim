@@ -3,9 +3,9 @@
 # - custmin <- custom minimizer
 # - custcallnack <- custom callback for minimizer
 
-from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 import ray
+from scipy.optimize import OptimizeResult
 
 
 def custmin(
@@ -42,12 +42,7 @@ def custmin(
     # main loop
     while improved and not stop and besty > tol:
         # Initialization, we are checking which direction we should go
-        while (
-            segment_check
-            and abs(stepsize) == bigstep
-            and not stop
-            and besty > tol
-        ):
+        while segment_check and abs(stepsize) == bigstep and not stop and besty > tol:
             niter += 1
             improved = False
             for testx in [max(1, bestx - stepsize), max(1, bestx + stepsize)]:
@@ -182,13 +177,10 @@ def custmin(
     )
 
 
-def custcallback(
-    error=None, x=None, nit=None, nfev=None, stepsize=None, fev_list=None
-):
+def custcallback(error=None, x=None, nit=None, nfev=None, stepsize=None, fev_list=None):
     print(
-        "iteration #{}:   x={}   error={}  function evaluated {} times step taken: {}".format(
-            nit, x, error, nfev, stepsize
-        )
+        "iteration #{}:   x={}   error={}  function evaluated {} times step taken: {}"
+        .format(nit, x, error, nfev, stepsize)
     )
     x_plot = [fev[0] for fev in fev_list]
     y_plot = [fev[1] for fev in fev_list]

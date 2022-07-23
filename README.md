@@ -1,4 +1,5 @@
 KAPpaxsim
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 ==============================
 
 Simulation tools based on Simpy library applied to KAP terminal Pax flows
@@ -9,15 +10,15 @@ Project Organization
     ├── LICENSE
     ├── README.md              <- The top-level README for developers using this project.
     ├── data
-    │   ├── interim            <- Intermediate data that has been transformed. (not uploaded to github) 
-    │   ├── processed          <- The final, canonical data sets for modeling. (not uploaded to github) 
-    │   ├── raw                <- The original, immutable data dump. (not uploaded to github) 
-    │   └── secret             <- Secret data like Sharepoint login (not uploaded to github) 
+    │   ├── interim            <- Intermediate data that has been transformed. (not uploaded to github)
+    │   ├── processed          <- The final, canonical data sets for modeling. (not uploaded to github)
+    │   ├── raw                <- The original, immutable data dump. (not uploaded to github)
+    │   └── secret             <- Secret data like Sharepoint login (not uploaded to github)
     │       └── .env           <- File with local environment parameters
-    │                               and passwords. Please ask separately (not uploaded to github) 
+    │                               and passwords. Please ask separately (not uploaded to github)
     │
     ├── notebooks              <- Jupyter notebooks for analysis and report creation
-    │   ├── full               <- Including outputs (not uploaded to github) 
+    │   ├── full               <- Including outputs (not uploaded to github)
     │   └── stripped           <- Manually copied and stripped of outputs (uploaded to github)
     │
     ├── reports                <- Generated analysis as HTML, PDF, LaTeX, etc.
@@ -30,7 +31,7 @@ Project Organization
     ├── src                    <- Source code for use in this project.
     │   ├── __init__.py        <- Makes src a Python module
     │   │
-    │   ├── utils              <- regroup utilities in a module  
+    │   ├── utils              <- regroup utilities in a module
     │   │   ├── __init__.py    <- Makes utils python module
     │   │   ├── graph.py       <- For uniform graphs
     │   │   ├── helpers.py     <- Calculate stuff (eg.LBS)

@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def calculate_EBS_LBC(
@@ -16,15 +16,9 @@ def calculate_EBS_LBC(
     # we take start security queue because some come from checkin and some from CUSBD
     # we should also remove no bag pax (TBD)
 
-    mask_EBS = (
-        df_result["start_security_queue"] < df_result["STD"] - MUP_open_time
-    )
-    df_result.loc[mask_EBS, "EBS_in"] = df_result.loc[
-        mask_EBS, "start_security_queue"
-    ]
-    df_result.loc[mask_EBS, "EBS_out"] = (
-        df_result.loc[mask_EBS, "STD"] - MUP_open_time
-    )
+    mask_EBS = df_result["start_security_queue"] < df_result["STD"] - MUP_open_time
+    df_result.loc[mask_EBS, "EBS_in"] = df_result.loc[mask_EBS, "start_security_queue"]
+    df_result.loc[mask_EBS, "EBS_out"] = df_result.loc[mask_EBS, "STD"] - MUP_open_time
 
     plt_in_EBS = (
         df_result.loc[mask_EBS, ["EBS_in", "Pax_N"]]
@@ -46,12 +40,8 @@ def calculate_EBS_LBC(
 
     # mask for bags who will use LBC
 
-    mask_LBC = (
-        df_result["start_security_queue"] > df_result["STD"] - MUP_close_time
-    )
-    df_result.loc[mask_LBC, "LBC_in"] = df_result.loc[
-        mask_LBC, "start_security_queue"
-    ]
+    mask_LBC = df_result["start_security_queue"] > df_result["STD"] - MUP_close_time
+    df_result.loc[mask_LBC, "LBC_in"] = df_result.loc[mask_LBC, "start_security_queue"]
     df_result.loc[mask_LBC, "LBC_out"] = df_result.loc[mask_LBC, "STD"]
 
     plt_in_LBC = (
@@ -122,12 +112,8 @@ def calculate_EBS_modern_pax_only(
     mask_EBS = (
         df_result["start_security_queue"] < df_result["STD"] - MUP_open_time
     ) & (df_result["Pax_ID"].apply(lambda x: x.split("_")[-1]) == "modern")
-    df_result.loc[mask_EBS, "EBS_in"] = df_result.loc[
-        mask_EBS, "start_security_queue"
-    ]
-    df_result.loc[mask_EBS, "EBS_out"] = (
-        df_result.loc[mask_EBS, "STD"] - MUP_open_time
-    )
+    df_result.loc[mask_EBS, "EBS_in"] = df_result.loc[mask_EBS, "start_security_queue"]
+    df_result.loc[mask_EBS, "EBS_out"] = df_result.loc[mask_EBS, "STD"] - MUP_open_time
 
     plt_in_EBS = (
         df_result.loc[mask_EBS, ["EBS_in", "Pax_N"]]

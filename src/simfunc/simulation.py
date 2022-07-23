@@ -1,7 +1,6 @@
 # KIX_T1d_CUSBD_new.py
 
 import datetime
-from math import ceil
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -130,7 +129,8 @@ class Pax:
         """
         std = self.std.hour * 60 + self.std.minute + self.std.second / 60
         t = std - self.hour_to_std * 60 - self.env.now
-        # if std < self.env.now is that flight is after midnight and pax arrives before midnight
+        # if std < self.env.now is that flight
+        # is after midnight and pax arrives before midnight
         if std - self.env.now < 0:
             t += 24 * 60
         if t > 0:
@@ -274,7 +274,7 @@ class Simulation:
         }
 
         # option to filter by airline
-        if filter_airline != None:
+        if filter_airline is not None:
             if type(filter_airline) != list:
                 filter_airline = [filter_airline]
             mask = self.df_result["Airline"].isin(filter_airline)
@@ -463,7 +463,7 @@ class Simulation:
         axs[n_graph - 1, 0].set(xlabel="time")
 
         # remove dummy if needed
-        if dummy_graph == True:
+        if dummy_graph:
             axs[1, 0].remove()
             axs[1, 1].remove()
             ax2[1].remove()
