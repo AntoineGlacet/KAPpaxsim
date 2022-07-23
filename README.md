@@ -45,7 +45,6 @@ Prerequisite
 ------------
 
 - [conda ](https://docs.conda.io/en/latest/)
-- [pre-commit](https://github.com/pre-commit/pre-commit)
 
 Quick start guide
 ------------
@@ -63,11 +62,10 @@ pip install -e .
 Contribute
 ------------
 - Fork
-- Install pre-commit framework and repo hooks
-```bash
-conda install -c conda-forge pre-commit
-pre-commit install
-```
+- Install pre-commit hooks
+`pre-commit install`
+- Install nb_stripout
+`nbstripout --install`
 - Open pull request
 
 Remarks
