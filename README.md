@@ -25,7 +25,7 @@ Project Organization
     │   └── figures             <- Generated graphics and figures to be used in reporting
     │
     ├── .pre-commit-config.yaml <- Pre-commit hooks (https://github.com/pre-commit/pre-commit)
-    │                                 │
+    │
     ├── environement.yml        <- conda env file, use with `conda env create -f environment.yml`
     │                             generated with `conda env export > environment.yml`
     │
