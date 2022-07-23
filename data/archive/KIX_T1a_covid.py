@@ -170,7 +170,6 @@ def KIX_T1a_covid(
             Pt_test,
             N_test_slots,
         ):
-
             self.env = env
 
             self.Z = simpy.PriorityResource(env, N_Z)
@@ -254,7 +253,8 @@ def KIX_T1a_covid(
             yield self.env.timeout(self.Pt_test)
 
         def process_wait_test_result(self, Pax):
-            """Pax wait in 1 minute increments until the test result becomes available"""
+            """Pax wait in 1 minute increments until the test result becomes available
+            """
             # get Pax index
             index_Pax = int(Pax.split("_")[1])
 

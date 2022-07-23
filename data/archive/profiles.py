@@ -66,14 +66,9 @@ def show_up_function(
     DOTENV_FILE_PATH = Path(__file__).parent / "../../data/secret/.env"
     config = AutoConfig(search_path=DOTENV_FILE_PATH)
     path_forecasts = (
-        Path(__file__).parent
-        / ".."
-        / ".."
-        / config("schedule_forecast_FY19_25_path")
+        Path(__file__).parent / ".." / ".." / config("schedule_forecast_FY19_25_path")
     )
-    path_show_up = (
-        Path(__file__).parent / ".." / ".." / config("ADRM_param_full_path")
-    )
+    path_show_up = Path(__file__).parent / ".." / ".." / config("ADRM_param_full_path")
 
     # if custom showup, assign the mean and STD
     if custom_showup == True:
@@ -95,9 +90,7 @@ def show_up_function(
 
     # format a Schedules time column to make a Timeserie later on
     data["5min Interval"] = (
-        data["5min Interval"]
-        .astype(str)
-        .str.pad(width=4, side="left", fillchar="0")
+        data["5min Interval"].astype(str).str.pad(width=4, side="left", fillchar="0")
     )
 
     data["Scheduled Time"] = "2020-10-13 " + data["5min Interval"].astype(str)
@@ -170,13 +163,11 @@ def show_up_function(
         maxmin_peak = max(
             i for i in df_peak["ST{}".format(direction)] if i <= target_peak
         )
-        FY = df_peak[
-            (df_peak["ST{}".format(direction)] == maxmin_peak)
-        ].index[0]
+        FY = df_peak[(df_peak["ST{}".format(direction)] == maxmin_peak)].index[0]
         schedule_peak = maxmin_peak
-        
+
         print(df_peak)
-        print('chosen reference year: '+str(FY))
+        print("chosen reference year: " + str(FY))
     # for later, let's store the selected year peak value
     # ===========================================  function start ================================================
     # filter
@@ -195,16 +186,10 @@ def show_up_function(
     # ====================================== Counters =====================================
     if system == "check-in":
         # NEW fix some input mistakes
-        data["Flight Number"] = data["Flight Number"].replace(
-            ["JX821"], "JX 821"
-        )
-        data["Flight Number"] = data["Flight Number"].replace(
-            ["NS*****"], "NS *****"
-        )
+        data["Flight Number"] = data["Flight Number"].replace(["JX821"], "JX 821")
+        data["Flight Number"] = data["Flight Number"].replace(["NS*****"], "NS *****")
         # split Airline Code
-        data["Airline Code"] = data["Flight Number"].str.split(
-            " ", 1, expand=True
-        )[0]
+        data["Airline Code"] = data["Flight Number"].str.split(" ", 1, expand=True)[0]
 
         # NEW
         start_time = 2.5  # hours before STD for check-in opening
@@ -231,12 +216,10 @@ def show_up_function(
 
         # boucle sur les airlines
         for airline_code in data["Airline Code"].unique():
-
             # boucle sur les flight code
             for flight_number in data[(data["Airline Code"] == airline_code)][
                 "Flight Number"
             ]:
-
                 # round down 5 minutes le STD
                 time = data[data["Flight Number"] == flight_number][
                     "Scheduled Time"
@@ -301,8 +284,7 @@ def show_up_function(
                         base_n_counter
                         + 1
                         + (
-                            (df_Counters_3d.iloc[i, col] - 201)
-                            // seats_per_add_counter
+                            (df_Counters_3d.iloc[i, col] - 201) // seats_per_add_counter
                         ),
                     )
 
@@ -345,18 +327,10 @@ def show_up_function(
         # interpolation of show_up profiles and inverse functions
         x = show_up_ter["time before STD"].to_numpy(dtype=float)
 
-        yFSC = show_up_ter["cumulative distribution FSC"].to_numpy(
-            dtype=float
-        )
-        yLCC = show_up_ter["cumulative distribution LCC"].to_numpy(
-            dtype=float
-        )
-        yEARLY = show_up_ter["cumulative distribution EARLY"].to_numpy(
-            dtype=float
-        )
-        yCHINA = show_up_ter["cumulative distribution CHINA"].to_numpy(
-            dtype=float
-        )
+        yFSC = show_up_ter["cumulative distribution FSC"].to_numpy(dtype=float)
+        yLCC = show_up_ter["cumulative distribution LCC"].to_numpy(dtype=float)
+        yEARLY = show_up_ter["cumulative distribution EARLY"].to_numpy(dtype=float)
+        yCHINA = show_up_ter["cumulative distribution CHINA"].to_numpy(dtype=float)
 
         f_ter_FSC = interp1d(x, yFSC, kind="linear")
         f_ter_LCC = interp1d(x, yLCC, kind="linear")
@@ -364,18 +338,10 @@ def show_up_function(
         f_ter_CHINA = interp1d(x, yCHINA, kind="linear")
 
         if custom_showup == True:
-            f_ter_FSC = lambda x: 1 - norm.cdf(
-                x, loc=loc_FSC, scale=scale_FSC
-            )
-            f_ter_LCC = lambda x: 1 - norm.cdf(
-                x, loc=loc_LCC, scale=scale_LCC
-            )
-            f_ter_EARLY = lambda x: 1 - norm.cdf(
-                x, loc=loc_EARLY, scale=scale_EARLY
-            )
-            f_ter_CHINA = lambda x: 1 - norm.cdf(
-                x, loc=loc_CHINA, scale=scale_CHINA
-            )
+            f_ter_FSC = lambda x: 1 - norm.cdf(x, loc=loc_FSC, scale=scale_FSC)
+            f_ter_LCC = lambda x: 1 - norm.cdf(x, loc=loc_LCC, scale=scale_LCC)
+            f_ter_EARLY = lambda x: 1 - norm.cdf(x, loc=loc_EARLY, scale=scale_EARLY)
+            f_ter_CHINA = lambda x: 1 - norm.cdf(x, loc=loc_CHINA, scale=scale_CHINA)
 
         f_ter_FSC_inv_linear = interp1d(f_ter_FSC(x), x, kind="linear")
         f_ter_LCC_inv_linear = interp1d(f_ter_LCC(x), x, kind="linear")
@@ -468,29 +434,19 @@ def show_up_function(
         # interpolation of show_up profiles and inverse functions
         x = show_up_sec["time before STD"].to_numpy(dtype=float)
 
-        yFSC = show_up_sec["cumulative distribution FSC"].to_numpy(
-            dtype=float
-        )
+        yFSC = show_up_sec["cumulative distribution FSC"].to_numpy(dtype=float)
         f_sec_FSC = interp1d(x, yFSC, kind="linear")
 
-        yLCC = show_up_sec["cumulative distribution LCC"].to_numpy(
-            dtype=float
-        )
+        yLCC = show_up_sec["cumulative distribution LCC"].to_numpy(dtype=float)
         f_sec_LCC = interp1d(x, yLCC, kind="linear")
 
-        yEARLY = show_up_sec["cumulative distribution EARLY"].to_numpy(
-            dtype=float
-        )
+        yEARLY = show_up_sec["cumulative distribution EARLY"].to_numpy(dtype=float)
         f_sec_EARLY = interp1d(x, yEARLY, kind="linear")
 
-        yCHINA = show_up_sec["cumulative distribution CHINA"].to_numpy(
-            dtype=float
-        )
+        yCHINA = show_up_sec["cumulative distribution CHINA"].to_numpy(dtype=float)
         f_sec_CHINA = interp1d(x, yEARLY, kind="linear")
 
-        yMORNING = show_up_sec["cumulative distribution MORNING"].to_numpy(
-            dtype=float
-        )
+        yMORNING = show_up_sec["cumulative distribution MORNING"].to_numpy(dtype=float)
         f_sec_MORNING = interp1d(x, yEARLY, kind="linear")
 
         f_sec_FSC = interp1d(x, yFSC, kind="linear")
@@ -503,9 +459,7 @@ def show_up_function(
         f_sec_LCC_inv_linear = interp1d(f_sec_LCC(x), x, kind="linear")
         f_sec_EARLY_inv_linear = interp1d(f_sec_EARLY(x), x, kind="linear")
         f_sec_CHINA_inv_linear = interp1d(f_sec_CHINA(x), x, kind="linear")
-        f_sec_MORNING_inv_linear = interp1d(
-            f_sec_MORNING(x), x, kind="linear"
-        )
+        f_sec_MORNING_inv_linear = interp1d(f_sec_MORNING(x), x, kind="linear")
 
         # let's allocate profiles to flight and apply the ratios to Pax
         list_time_Pax = []
@@ -656,12 +610,12 @@ def show_up_function(
         # interpolation of boarding profiles for specified type and inverse functions
         x = show_up_boarding["time before STD"].to_numpy(dtype=float)
 
-        y_boarding_C = show_up_boarding[
-            "cumulative distribution code C"
-        ].to_numpy(dtype=float)
-        y_boarding_E = show_up_boarding[
-            "cumulative distribution code E"
-        ].to_numpy(dtype=float)
+        y_boarding_C = show_up_boarding["cumulative distribution code C"].to_numpy(
+            dtype=float
+        )
+        y_boarding_E = show_up_boarding["cumulative distribution code E"].to_numpy(
+            dtype=float
+        )
         f_boarding_C = interp1d(x, y_boarding_C, kind="linear")
         f_boarding_E = interp1d(x, y_boarding_E, kind="linear")
 
@@ -722,12 +676,8 @@ def show_up_function(
 
         # interpolate deboarding profiles to use on schedule
         x = show_up_arrival["time after STA"].to_numpy(dtype=float)
-        yC = show_up_arrival["cumulative distribution code C"].to_numpy(
-            dtype=float
-        )
-        yE = show_up_arrival["cumulative distribution code E"].to_numpy(
-            dtype=float
-        )
+        yC = show_up_arrival["cumulative distribution code C"].to_numpy(dtype=float)
+        yE = show_up_arrival["cumulative distribution code E"].to_numpy(dtype=float)
         fC = interp1d(x, yC, kind="linear")
         fE = interp1d(x, yE, kind="linear")
         fC_inv_linear = interp1d(fC(x)[0:3], x[0:3], kind="linear")
@@ -863,20 +813,16 @@ def generate_dep_Pax_Counters(
             # specific allocation to T2: no more than 10 counters for each airline
             # and always 10 counters for peach (MM)
             df_Counters = df_Counters.applymap(lambda x: no_more_than_10(x))
-            df_Counters["MM"] = df_Counters["MM"].apply(
-                lambda x: if_open_10(x)
+            df_Counters["MM"] = df_Counters["MM"].apply(lambda x: if_open_10(x))
+            df_Counters["total"] = df_Counters.drop(labels=["total"], axis=1).sum(
+                axis=1
             )
-            df_Counters["total"] = df_Counters.drop(
-                labels=["total"], axis=1
-            ).sum(axis=1)
 
     return df_Pax, df_Counters
 
 
 # use the function to generate Pax and counters
-def generate_arr_Pax(
-    target_peak=3900, terminal="T1", custom_showup=False, **kwargs
-):
+def generate_arr_Pax(target_peak=3900, terminal="T1", custom_showup=False, **kwargs):
     """
     returns df_Pax
     target peak: the value for target peak hour STD (double check the input is actually peak hour STA)
