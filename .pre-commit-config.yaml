@@ -23,4 +23,5 @@ repos:
     hooks:
     -   id: detect-private-key
     -   id: check-added-large-files
+        exclude_types: ["jupyter"] # because nb_stripout
     -   id: trailing-whitespace
