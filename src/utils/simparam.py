@@ -11,7 +11,6 @@ import seaborn as sns
 from decouple import AutoConfig
 from scipy.interpolate import interp1d
 from scipy.stats import norm
-from tqdm import tqdm
 
 
 class SimParam:
@@ -192,7 +191,7 @@ class SimParam:
         # | FSC  | 60  |  30   |
         # loc = mean
         # scale = standard deviation
-        # /!\ requires a 'show_up_category' col in self.schedule
+        # !!! requires a 'show_up_category' col in self.schedule
         """
         show_up_ter = pd.read_excel(
             self.path_param,
@@ -228,16 +227,12 @@ class SimParam:
 
         for i in range(len(self.schedule)):
             N_flight_pax = int(self.schedule.loc[i, "PAX_SUM FC"])
-            STD = self.schedule.loc[i, "Scheduled Time"]
+            std = self.schedule.loc[i, "Scheduled Time"]
             y = np.linspace(0.01, 0.99, N_flight_pax)
             show_up_category = self.schedule.loc[i, "show_up_category"]
             f_ter_inv_linear = self.dct_f_inv_linear[show_up_category]
 
-            temps_Terminal = (
-                self.schedule.loc[i, "Scheduled Time"].hour * 60
-                + self.schedule.loc[i, "Scheduled Time"].minute
-                - f_ter_inv_linear(y)
-            )
+            temps_Terminal = std.hour * 60 + std.minute - f_ter_inv_linear(y)
 
             for t in temps_Terminal:
                 t = datetime.datetime(
@@ -325,7 +320,8 @@ class SimParam:
                 if df_Seats.iloc[i, col] != 0:
                     # Wee check from 45 minutes to 2.5 hours before STD
                     for j in range(start_slot, onecounter_slot):
-                        # for each cell, if there is already a number, we put add the seats
+                        # for each cell, if there is already a number
+                        # we put add the seats
                         df_Counters_3d.iloc[i + offset + j, col] = (
                             df_Counters_3d.iloc[i + offset + j, col]
                             + df_Seats.iloc[i, col]
@@ -399,7 +395,7 @@ class SimParam:
         sns.set_theme(style="whitegrid")
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
 
-        if by_pax_type == True:
+        if by_pax_type:
             pax_types = self.df_Pax["pax_type"].unique()
             plot = {
                 pax_types[i]: self.df_Pax.loc[
@@ -428,7 +424,7 @@ class SimParam:
 
         fig, ax = plt.subplots(figsize=(8, 5))
 
-        if by_pax_type == True:
+        if by_pax_type:
             previous_plot = plot[pax_types[0]] * 0
             for pax_type in plot:
                 ax.plot(plot[pax_type], label="{} show-up".format(pax_type))
@@ -464,7 +460,6 @@ class SimParam:
         plt.show()
 
     def plot_std(self, compare_with=None, freq: str = "1H", win=1):
-
         nb_bar = 1
         # option to compare with other std_plot
         if not (compare_with is None):

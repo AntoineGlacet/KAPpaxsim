@@ -158,7 +158,8 @@ def KIX_T2_departure_sim_function(
             yield self.env.timeout(test_time)
 
         def checkin_1step_dummy(self, Pax):
-            """dummy process to have the good processing time for each checkin operation"""
+            """dummy process to have the good processing time for each checkin operation
+            """
             opened_counters = data.loc[
                 int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
             ]
@@ -183,7 +184,8 @@ def KIX_T2_departure_sim_function(
             yield self.env.timeout(test_time)
 
         def checkin_2step_dummy(self, Pax):
-            """dummy process to have the good processing time for each checkin operation"""
+            """dummy process to have the good processing time for each checkin operation
+            """
             opened_counters = data.loc[
                 int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
             ]

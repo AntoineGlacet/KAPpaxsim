@@ -227,7 +227,8 @@ def KIX_T1d_CUSBD(
             yield self.env.timeout(test_time)
 
         def checkin_1step_dummy(self, Pax):
-            """dummy process to have the good processing time for each checkin operation"""
+            """dummy process to have the good processing time for each checkin operation
+            """
             opened_counters = data.loc[
                 int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
             ]
@@ -252,7 +253,8 @@ def KIX_T1d_CUSBD(
             yield self.env.timeout(test_time)
 
         def checkin_2step_dummy(self, Pax):
-            """dummy process to have the good processing time for each checkin operation"""
+            """dummy process to have the good processing time for each checkin operation
+            """
             opened_counters = data.loc[
                 int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
             ]
@@ -512,7 +514,6 @@ def KIX_T1d_CUSBD(
     # ======================================= Passenger generator by flight =======================================
 
     def Pax_generator(env, departure, flight, df_Pax_flight, index_total):
-
         # get info from df_Pax_flight to be passed down to Pax
         STD = df_Pax_flight.loc[0, "Scheduled Time"]
         Flight_Number = df_Pax_flight.loc[0, "Flight Number"]
@@ -1264,7 +1265,6 @@ def cost_function_T1d_CUSBD_modern_pax_ratio(
 
     # if top90% pax do not wait, penalize low %CUSBD
     if dct_hist_wait_time["CUSBD"].quantile(q=0.90) == 0:
-
         cost_wait_time_run += (1 - dct_param_T1d["modern_pax_ratio"]) / 10000
 
     # if the top90% Pax waits 8hrs or more, penalize high %CUSBD
@@ -1310,7 +1310,6 @@ def cost_function_T1d_CUSBD_CUSBD_opening_duration(
 
     # if EBS empty, penalize short opening duration
     if EBS_requirement == 0:
-
         cost_EBS += (1 / dct_param_T1d["CUSBD_opening_duration"]) / 10000
 
     # if EBS_full, penalize long opening duration
