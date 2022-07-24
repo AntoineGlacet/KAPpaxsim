@@ -1,7 +1,7 @@
 repos:
 # sort python imports
 -   repo: https://github.com/pycqa/isort
-    rev: 5.5.2
+    rev: 5.10.1
     hooks:
     -   id: isort
 # black formatting
@@ -19,9 +19,14 @@ repos:
         exclude: ^data/misc/
 # various checks
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v4.3.0
     hooks:
     -   id: detect-private-key
     -   id: check-added-large-files
         exclude_types: ["jupyter"] # because nb_stripout
     -   id: trailing-whitespace
+# f string for py files
+-   repo: https://github.com/ikamensh/flynt/
+    rev: '0.76'
+    hooks:
+    -   id: flynt

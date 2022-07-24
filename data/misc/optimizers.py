@@ -312,14 +312,7 @@ def custcallback_multicore(
     finished,
     loop,
 ):
-    print(
-        "loop #{}:   bestx={}   besty=error={} finished={}".format(
-            loop,
-            bestx,
-            besty,
-            finished,
-        )
-    )
+    print(f"loop #{loop}:   bestx={bestx}   besty=error={besty} finished={finished}")
 
     fig, ax = plt.subplots(figsize=(6, 2))
     ax.plot(all_x, all_y, "o", color="royalblue")

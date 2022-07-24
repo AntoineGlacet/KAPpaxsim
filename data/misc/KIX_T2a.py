@@ -357,7 +357,7 @@ def KIX_T2_arrival_sim_function(
         env.process(
             Pax_traditional(
                 env,
-                "pax_{}_{}_traditional".format(index_total, flight),
+                f"pax_{index_total}_{flight}_traditional",
                 arrival,
             )
         )
@@ -410,7 +410,7 @@ def KIX_T2_arrival_sim_function(
                 env.process(
                     Pax_modern(
                         env,
-                        "pax_{}_{}_modern".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_modern",
                         arrival,
                     )
                 )
@@ -418,7 +418,7 @@ def KIX_T2_arrival_sim_function(
                 env.process(
                     Pax_digital(
                         env,
-                        "pax_{}_{}_digital".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_digital",
                         arrival,
                     )
                 )
@@ -426,7 +426,7 @@ def KIX_T2_arrival_sim_function(
                 env.process(
                     Pax_no_bag(
                         env,
-                        "pax_{}_{}_no_bag".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_no_bag",
                         arrival,
                     )
                 )
@@ -434,7 +434,7 @@ def KIX_T2_arrival_sim_function(
                 env.process(
                     Pax_traditional(
                         env,
-                        "pax_{}_{}_traditional".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_traditional",
                         arrival,
                     )
                 )

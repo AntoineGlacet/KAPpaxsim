@@ -330,14 +330,14 @@ def KIX_T1a_covid(
         # first, Z, A and B
         for process in ["Z", "A", "B"]:
             with dct_resources[process].request(priority=2) as request:
-                df_result.loc[index_Pax, "{}_queue_length".format(process)] = len(
+                df_result.loc[index_Pax, f"{process}_queue_length"] = len(
                     dct_resources[process].queue
                 )
-                df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
                 yield request
-                df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
                 yield env.process(dct_processes[process](name))
-                df_result.loc[index_Pax, "end_{}_process".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_process"] = env.now
 
         # then start test process in paralell
         env.process(pcr_test(env, name, arr))
@@ -345,14 +345,14 @@ def KIX_T1a_covid(
         # then Y1,C1,check1,check2,C2,C3
         for process in ["Y1", "C1", "check1", "check2", "C2", "C3"]:
             with dct_resources[process].request(priority=2) as request:
-                df_result.loc[index_Pax, "{}_queue_length".format(process)] = len(
+                df_result.loc[index_Pax, f"{process}_queue_length"] = len(
                     dct_resources[process].queue
                 )
-                df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
                 yield request
-                df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
                 yield env.process(dct_processes[process](name))
-                df_result.loc[index_Pax, "end_{}_process".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_process"] = env.now
 
         # finally wait for test result
         # the only difference is we check the 'count'
@@ -360,15 +360,15 @@ def KIX_T1a_covid(
         with arr.wait_test_result.request(priority=2) as request:
             process = "wait_test_result"
             df_result.loc[
-                index_Pax, "{}_queue_length".format(process)
+                index_Pax, f"{process}_queue_length"
             ] = arr.wait_test_result.count
-            df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+            df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
             yield request
             # df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
             yield env.process(dct_processes[process](name))
             # here, we actually consider the process as a queue
             # this is to have a consisten waiting time that makes sense
-            df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+            df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
 
     def Pax_check2(env, name, arr):
         """
@@ -415,14 +415,14 @@ def KIX_T1a_covid(
         # first, Z, A and B
         for process in ["Z", "A", "B"]:
             with dct_resources[process].request(priority=2) as request:
-                df_result.loc[index_Pax, "{}_queue_length".format(process)] = len(
+                df_result.loc[index_Pax, f"{process}_queue_length"] = len(
                     dct_resources[process].queue
                 )
-                df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
                 yield request
-                df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
                 yield env.process(dct_processes[process](name))
-                df_result.loc[index_Pax, "end_{}_process".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_process"] = env.now
 
         # then start test process in paralell
         env.process(pcr_test(env, name, arr))
@@ -430,14 +430,14 @@ def KIX_T1a_covid(
         # then Y1,C1,check1,check2,C2,C3
         for process in ["Y1", "C1", "check2", "C2", "C3"]:
             with dct_resources[process].request(priority=2) as request:
-                df_result.loc[index_Pax, "{}_queue_length".format(process)] = len(
+                df_result.loc[index_Pax, f"{process}_queue_length"] = len(
                     dct_resources[process].queue
                 )
-                df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
                 yield request
-                df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
                 yield env.process(dct_processes[process](name))
-                df_result.loc[index_Pax, "end_{}_process".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_process"] = env.now
 
         # finally wait for test result
         # the only difference is we check the 'count'
@@ -445,15 +445,15 @@ def KIX_T1a_covid(
         with arr.wait_test_result.request(priority=2) as request:
             process = "wait_test_result"
             df_result.loc[
-                index_Pax, "{}_queue_length".format(process)
+                index_Pax, f"{process}_queue_length"
             ] = arr.wait_test_result.count
-            df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+            df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
             yield request
             # df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
             yield env.process(dct_processes[process](name))
             # here, we actually consider the process as a queue
             # this is to have a consisten waiting time that makes sense
-            df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+            df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
 
     def Pax_rental(env, name, arr):
         """
@@ -500,14 +500,14 @@ def KIX_T1a_covid(
         # first, Z, A and B
         for process in ["Z", "A", "B"]:
             with dct_resources[process].request(priority=2) as request:
-                df_result.loc[index_Pax, "{}_queue_length".format(process)] = len(
+                df_result.loc[index_Pax, f"{process}_queue_length"] = len(
                     dct_resources[process].queue
                 )
-                df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
                 yield request
-                df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
                 yield env.process(dct_processes[process](name))
-                df_result.loc[index_Pax, "end_{}_process".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_process"] = env.now
 
         # then start test process in paralell
         env.process(pcr_test(env, name, arr))
@@ -515,14 +515,14 @@ def KIX_T1a_covid(
         # then Y1,C1,check1,check2,C2,C3
         for process in ["Y1", "C1", "rental", "check2", "C2", "C3"]:
             with dct_resources[process].request(priority=2) as request:
-                df_result.loc[index_Pax, "{}_queue_length".format(process)] = len(
+                df_result.loc[index_Pax, f"{process}_queue_length"] = len(
                     dct_resources[process].queue
                 )
-                df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
                 yield request
-                df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
                 yield env.process(dct_processes[process](name))
-                df_result.loc[index_Pax, "end_{}_process".format(process)] = env.now
+                df_result.loc[index_Pax, f"end_{process}_process"] = env.now
 
         # finally wait for test result
         # the only difference is we check the 'count'
@@ -530,15 +530,15 @@ def KIX_T1a_covid(
         with arr.wait_test_result.request(priority=2) as request:
             process = "wait_test_result"
             df_result.loc[
-                index_Pax, "{}_queue_length".format(process)
+                index_Pax, f"{process}_queue_length"
             ] = arr.wait_test_result.count
-            df_result.loc[index_Pax, "start_{}_queue".format(process)] = env.now
+            df_result.loc[index_Pax, f"start_{process}_queue"] = env.now
             yield request
             # df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
             yield env.process(dct_processes[process](name))
             # here, we actually consider the process as a queue
             # this is to have a consisten waiting time that makes sense
-            df_result.loc[index_Pax, "end_{}_queue".format(process)] = env.now
+            df_result.loc[index_Pax, f"end_{process}_queue"] = env.now
 
     # ======================================= Passenger generator by flight =======================================
 
@@ -553,9 +553,7 @@ def KIX_T1a_covid(
         index_total = index_total + index_vol
         N_pax_flight = len(df_Pax_flight["minutes"])
         yield env.timeout(df_Pax_flight["minutes"][index_vol])
-        env.process(
-            Pax_check1(env, "pax_{}_{}_check1".format(index_total, flight), arrival)
-        )
+        env.process(Pax_check1(env, f"pax_{index_total}_{flight}_check1", arrival))
 
         # Create the other Paxes
         for index_vol in range(1, N_pax_flight):
@@ -599,7 +597,7 @@ def KIX_T1a_covid(
                 env.process(
                     Pax_rental(
                         env,
-                        "pax_{}_{}_rental".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_rental",
                         arrival,
                     )
                 )
@@ -607,7 +605,7 @@ def KIX_T1a_covid(
                 env.process(
                     Pax_check2(
                         env,
-                        "pax_{}_{}_check2".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_check2",
                         arrival,
                     )
                 )
@@ -616,7 +614,7 @@ def KIX_T1a_covid(
                 env.process(
                     Pax_check1(
                         env,
-                        "pax_{}_{}_check1".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_check1",
                         arrival,
                     )
                 )
@@ -778,21 +776,18 @@ def KIX_T1a_covid(
 
     # Create waiting times
     for process in list_process_all:
-        df_result["wait_time_{}".format(process)] = (
-            df_result["end_{}_queue".format(process)]
-            - df_result["start_{}_queue".format(process)]
+        df_result[f"wait_time_{process}"] = (
+            df_result[f"end_{process}_queue"] - df_result[f"start_{process}_queue"]
         ).fillna(datetime.timedelta(0))
 
     # for process with start queue but no end queue, set waiting time at 8hrs
     # actually, the queue did not end during sim time so we set the result as high
     for process in list_process_all:
-        mask = (pd.isna(df_result["end_{}_queue".format(process)])) & (
-            pd.notna(df_result["start_{}_queue".format(process)])
+        mask = (pd.isna(df_result[f"end_{process}_queue"])) & (
+            pd.notna(df_result[f"start_{process}_queue"])
         )
 
-        df_result.loc[mask, "wait_time_{}".format(process)] = datetime.timedelta(
-            hours=8
-        )
+        df_result.loc[mask, f"wait_time_{process}"] = datetime.timedelta(hours=8)
 
     # dct plot for graphs by list comprehension
     # they correspond to in/out/queue length/wait time

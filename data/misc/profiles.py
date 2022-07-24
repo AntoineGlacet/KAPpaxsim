@@ -109,7 +109,7 @@ def show_up_function(
                 & (data["Int/Dom"] == sector)
                 & (data["Category(P/C/O)"] == "Passenger")
                 & (data["T1/T2(MM/9C/7C/TW)"] == terminal)
-                & (data["FY"] == "FY{}".format(FY))
+                & (data["FY"] == f"FY{FY}")
             )
         ]
 
@@ -151,19 +151,14 @@ def show_up_function(
     )
 
     # let's find the FY corresponding best to the target_peak
-    if target_peak < df_peak["ST{}".format(direction)].min():
+    if target_peak < df_peak[f"ST{direction}"].min():
         FY = df_peak[
-            (
-                df_peak["ST{}".format(direction)]
-                == df_peak["ST{}".format(direction)].min()
-            )
+            (df_peak[f"ST{direction}"] == df_peak[f"ST{direction}"].min())
         ].index[0]
-        schedule_peak = df_peak["ST{}".format(direction)].min()
+        schedule_peak = df_peak[f"ST{direction}"].min()
     else:
-        maxmin_peak = max(
-            i for i in df_peak["ST{}".format(direction)] if i <= target_peak
-        )
-        FY = df_peak[(df_peak["ST{}".format(direction)] == maxmin_peak)].index[0]
+        maxmin_peak = max(i for i in df_peak[f"ST{direction}"] if i <= target_peak)
+        FY = df_peak[(df_peak[f"ST{direction}"] == maxmin_peak)].index[0]
         schedule_peak = maxmin_peak
 
         print(df_peak)
@@ -178,7 +173,7 @@ def show_up_function(
             & (data["Int/Dom"] == sector)
             & (data["Category(P/C/O)"] == "Passenger")
             & (data["T1/T2(MM/9C/7C/TW)"] == terminal)
-            & (data["FY"] == "FY{}".format(FY))
+            & (data["FY"] == f"FY{FY}")
         )
     ]
     filtered_data = filtered_data.reset_index()
@@ -246,10 +241,10 @@ def show_up_function(
         df_Counters_previous_day = df_Counters.copy()
         df_Counters_next_day = df_Counters.copy()
         df_Counters_previous_day = df_Counters_previous_day.reindex(
-            index=["day-1 {}".format(i) for i in range(0, 288)]
+            index=[f"day-1 {i}" for i in range(0, 288)]
         )
         df_Counters_next_day = df_Counters_next_day.reindex(
-            index=["day+1 {}".format(i) for i in range(0, 288)]
+            index=[f"day+1 {i}" for i in range(0, 288)]
         )
 
         df1 = df_Counters_previous_day
@@ -547,10 +542,10 @@ def show_up_function(
         x = show_up_CTG["time before STD"].to_numpy(dtype=float)
 
         y_CTG_C = show_up_CTG[
-            "cumulative distribution code C type {}".format(CTG_type)
+            f"cumulative distribution code C type {CTG_type}"
         ].to_numpy(dtype=float)
         y_CTG_E = show_up_CTG[
-            "cumulative distribution code E type {}".format(CTG_type)
+            f"cumulative distribution code E type {CTG_type}"
         ].to_numpy(dtype=float)
         f_CTG_C = interp1d(x, y_CTG_C, kind="linear")
         f_CTG_E = interp1d(x, y_CTG_E, kind="linear")

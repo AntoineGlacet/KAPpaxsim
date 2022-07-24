@@ -528,7 +528,7 @@ def KIX_T1d_CUSBD(
         env.process(
             Pax_traditional(
                 env,
-                "pax_{}_{}_traditional".format(index_total, flight),
+                f"pax_{index_total}_{flight}_traditional",
                 departure,
                 STD,
                 Flight_Number,
@@ -582,7 +582,7 @@ def KIX_T1d_CUSBD(
                 env.process(
                     Pax_modern(
                         env,
-                        "pax_{}_{}_modern".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_modern",
                         departure,
                         STD,
                         Flight_Number,
@@ -592,7 +592,7 @@ def KIX_T1d_CUSBD(
                 env.process(
                     Pax_digital(
                         env,
-                        "pax_{}_{}_digital".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_digital",
                         departure,
                         STD,
                         Flight_Number,
@@ -602,7 +602,7 @@ def KIX_T1d_CUSBD(
                 env.process(
                     Pax_premium(
                         env,
-                        "pax_{}_{}_premium".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_premium",
                         departure,
                         STD,
                         Flight_Number,
@@ -612,7 +612,7 @@ def KIX_T1d_CUSBD(
                 env.process(
                     Pax_traditional(
                         env,
-                        "pax_{}_{}_traditional".format(index_total, flight),
+                        f"pax_{index_total}_{flight}_traditional",
                         departure,
                         STD,
                         Flight_Number,
@@ -803,13 +803,11 @@ def KIX_T1d_CUSBD(
         "emigration_counter",
         "emigration_self",
     ]:
-        mask = (pd.isna(df_result["end_{}_queue".format(process)])) & (
-            pd.notna(df_result["start_{}_queue".format(process)])
+        mask = (pd.isna(df_result[f"end_{process}_queue"])) & (
+            pd.notna(df_result[f"start_{process}_queue"])
         )
 
-        df_result.loc[mask, "wait_time_{}".format(process)] = datetime.timedelta(
-            hours=14
-        )
+        df_result.loc[mask, f"wait_time_{process}"] = datetime.timedelta(hours=14)
 
     # dct plot for graphs by list comprehension
     # they correspond to in/out/queue length/wait time

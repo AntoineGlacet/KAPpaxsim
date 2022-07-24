@@ -147,10 +147,10 @@ def show_up_function(
         df_Counters_previous_day = df_Counters.copy()
         df_Counters_next_day = df_Counters.copy()
         df_Counters_previous_day = df_Counters_previous_day.reindex(
-            index=["day-1 {}".format(i) for i in range(0, 288)]
+            index=[f"day-1 {i}" for i in range(0, 288)]
         )
         df_Counters_next_day = df_Counters_next_day.reindex(
-            index=["day+1 {}".format(i) for i in range(0, 288)]
+            index=[f"day+1 {i}" for i in range(0, 288)]
         )
 
         df1 = df_Counters_previous_day
@@ -440,10 +440,10 @@ def show_up_function(
         x = show_up_CTG["time before STD"].to_numpy(dtype=float)
 
         y_CTG_C = show_up_CTG[
-            "cumulative distribution code C type {}".format(CTG_type)
+            f"cumulative distribution code C type {CTG_type}"
         ].to_numpy(dtype=float)
         y_CTG_E = show_up_CTG[
-            "cumulative distribution code E type {}".format(CTG_type)
+            f"cumulative distribution code E type {CTG_type}"
         ].to_numpy(dtype=float)
         f_CTG_C = interp1d(x, y_CTG_C, kind="linear")
         f_CTG_E = interp1d(x, y_CTG_E, kind="linear")

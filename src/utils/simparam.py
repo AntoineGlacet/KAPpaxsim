@@ -204,12 +204,10 @@ class SimParam:
         dct_show_up_profiles = {
             "name": [cat for cat in list_cat],
             "loc": [
-                show_up_ter.loc[0, "cumulative distribution {}".format(cat)]
-                for cat in list_cat
+                show_up_ter.loc[0, f"cumulative distribution {cat}"] for cat in list_cat
             ],
             "scale": [
-                show_up_ter.loc[1, "cumulative distribution {}".format(cat)]
-                for cat in list_cat
+                show_up_ter.loc[1, f"cumulative distribution {cat}"] for cat in list_cat
             ],
         }
 
@@ -383,7 +381,7 @@ class SimParam:
             ax.plot(
                 x,
                 self.dct_f_show_up[key](x),
-                label="show-up {}".format(key),
+                label=f"show-up {key}",
             )
 
         ax.invert_xaxis()
@@ -427,7 +425,7 @@ class SimParam:
         if by_pax_type:
             previous_plot = plot[pax_types[0]] * 0
             for pax_type in plot:
-                ax.plot(plot[pax_type], label="{} show-up".format(pax_type))
+                ax.plot(plot[pax_type], label=f"{pax_type} show-up")
                 ax.fill_between(
                     plot[pax_type].index,
                     plot[pax_type]["sum"],
@@ -521,7 +519,7 @@ class SimParam:
             ax.text(
                 0.15,
                 0.95 - index * 0.05,
-                "total = {:,} Pax".format(ploti["sum"].sum()),
+                f"total = {ploti['sum'].sum():,} Pax",
                 horizontalalignment="center",
                 verticalalignment="center",
                 transform=ax.transAxes,

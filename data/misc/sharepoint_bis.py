@@ -65,7 +65,7 @@ def download_file(
 
         with tqdm(
             total=int(file.properties["Length"]),
-            desc="downloading {}".format(str(file.properties["Name"])),
+            desc=f"downloading {str(file.properties['Name'])}",
             unit="B",
             unit_scale=True,
             unit_divisor=1024,
@@ -75,7 +75,7 @@ def download_file(
                 .download_session(local_file, progress)
                 .execute_query()
             )
-    print("[Ok] file has been downloaded: {0}".format(download_file_path))
+    print(f"[Ok] file has been downloaded: {download_file_path}")
 
 
 def get_items_in_directory(

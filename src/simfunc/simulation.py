@@ -106,16 +106,16 @@ class Pax:
 
             with resource.request(priority=2) as request:
                 # store queue length and start of queue time
-                self.row["{}_queue_length".format(process_str)] = len(resource.queue)
-                self.row["start_{}_queue".format(process_str)] = self.env.now
+                self.row[f"{process_str}_queue_length"] = len(resource.queue)
+                self.row[f"start_{process_str}_queue"] = self.env.now
                 # request usage start queueing
                 yield request
                 # store end of the queue time
-                self.row["end_{}_queue".format(process_str)] = self.env.now
+                self.row[f"end_{process_str}_queue"] = self.env.now
                 # do the process
                 yield self.env.process(self.do_process(process_str))
                 # store end of process time
-                self.row["end_{}_process".format(process_str)] = self.env.now
+                self.row[f"end_{process_str}_process"] = self.env.now
 
     def do_process(self, process_str: str):
         """Pax does process, simple timeout"""
@@ -247,20 +247,20 @@ class Simulation:
 
         # calculate waiting times
         for process in list_process_all:
-            self.df_result["wait_time_{}".format(process)] = (
-                self.df_result["end_{}_queue".format(process)]
-                - self.df_result["start_{}_queue".format(process)]
+            self.df_result[f"wait_time_{process}"] = (
+                self.df_result[f"end_{process}_queue"]
+                - self.df_result[f"start_{process}_queue"]
             ).fillna(datetime.timedelta(0))
 
         # artificial high waiting time for pax who did not finish
         for process in list_process_all:
-            mask = (pd.isna(self.df_result["end_{}_queue".format(process)])) & (
-                pd.notna(self.df_result["start_{}_queue".format(process)])
+            mask = (pd.isna(self.df_result[f"end_{process}_queue"])) & (
+                pd.notna(self.df_result[f"start_{process}_queue"])
             )
 
-            self.df_result.loc[
-                mask, "wait_time_{}".format(process)
-            ] = datetime.timedelta(hours=8)
+            self.df_result.loc[mask, f"wait_time_{process}"] = datetime.timedelta(
+                hours=8
+            )
 
         # aggregates for plotting
         list_plot = [
@@ -414,7 +414,7 @@ class Simulation:
             axs[i, 1].text(
                 0.7,
                 0.9,
-                "total = {:,} Pax".format(self.plt_hist_wait_time[i].count()),
+                f"total = {self.plt_hist_wait_time[i].count():,} Pax",
                 horizontalalignment="center",
                 verticalalignment="center",
                 transform=axs[i, 1].transAxes,

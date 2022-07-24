@@ -28,7 +28,7 @@ def get_ADRM_param_full():
             .download(local_file)
             .execute_query()
         )
-    print("[Ok] file has been downloaded: {0}".format(download_path))
+    print(f"[Ok] file has been downloaded: {download_path}")
 
 
 def get_schedule_forecast_FY19_25():
@@ -46,7 +46,7 @@ def get_schedule_forecast_FY19_25():
             .download(local_file)
             .execute_query()
         )
-    print("[Ok] file has been downloaded: {0}".format(download_path))
+    print(f"[Ok] file has been downloaded: {download_path}")
 
 
 def get_T1_ren_6kPax_schedule():
@@ -64,4 +64,4 @@ def get_T1_ren_6kPax_schedule():
             .download(local_file)
             .execute_query()
         )
-    print("[Ok] file has been downloaded: {0}".format(download_path))
+    print(f"[Ok] file has been downloaded: {download_path}")
