@@ -397,56 +397,87 @@ class SimParam:
 
         plt.show()
 
-    def plot_df_Pax(self, by_pax_type: bool = False, freq: str = "5min", win=12):
+    def plot_df_Pax(
+        self,
+        by_pax_type: bool = False,
+        compare_with: Union["SimParam", list] = None,
+        freq: str = "5min",
+        win=12,
+    ):
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
 
-        if by_pax_type:
-            pax_types = self.df_Pax["pax_type"].unique()
-            plot = {
-                pax_types[i]: self.df_Pax.loc[
-                    self.df_Pax["pax_type"].isin(pax_types[0 : i + 1])
-                ]
-                .set_index("time", drop=False)["Pax"]
-                .resample(freq)
-                .agg(["sum"])
-                .rolling(window=win, center=True)
-                .mean()
-                .dropna()
-                .apply(lambda x: x * ratio_sampling)
-                for i in range(len(pax_types))
-            }
-
+        if not (compare_with is None):
+            if type(compare_with) != list:
+                compare_list = [compare_with]
         else:
-            plot = (
-                self.df_Pax.set_index("time", drop=False)["Pax"]
-                .resample(freq)
-                .agg(["sum"])
-                .rolling(window=win, center=True)
-                .mean()
-                .dropna()
-                .apply(lambda x: x * ratio_sampling)
-            )
+            compare_list = []
+
+        compare_list.insert(0, self)
+
+        dct_simparam = {
+            simparam.schedule.loc[0, "Flight Date"].year: simparam
+            for simparam in compare_list
+        }
 
         fig, ax = day_graph()
 
-        if by_pax_type:
-            previous_plot = plot[pax_types[0]] * 0
-            for pax_type in plot:
-                ax.plot(plot[pax_type], label=f"{pax_type} show-up")
-                ax.fill_between(
-                    plot[pax_type].index,
-                    plot[pax_type]["sum"],
-                    previous_plot["sum"],
-                    alpha=0.2,
+        for year, simparam in dct_simparam.items():
+            if by_pax_type:
+                pax_types = simparam.df_Pax["pax_type"].unique()
+                plot = {
+                    pax_types[i]: simparam.df_Pax.loc[
+                        simparam.df_Pax["pax_type"].isin(pax_types[0 : i + 1])
+                    ]
+                    .set_index("time", drop=False)["Pax"]
+                    .resample(freq)
+                    .agg(["sum"])
+                    .rolling(window=win, center=True)
+                    .mean()
+                    .dropna()
+                    .apply(lambda x: x * ratio_sampling)
+                    for i in range(len(pax_types))
+                }
+
+            else:
+                plot = (
+                    simparam.df_Pax.set_index("time", drop=False)["Pax"]
+                    .resample(freq)
+                    .agg(["sum"])
+                    .rolling(window=win, center=True)
+                    .mean()
+                    .dropna()
+                    .apply(lambda x: x * ratio_sampling)
                 )
-                previous_plot = plot[pax_type]
-        else:
-            ax.plot(plot, label="total show-up")
+
+            if by_pax_type:
+                previous_plot = plot[pax_types[0]] * 0
+                for pax_type in plot:
+                    label = (
+                        f"{pax_type} show-up {year}"
+                        if not (compare_with is None)
+                        else f"{pax_type} show_up"
+                    )
+                    ax.plot(plot[pax_type], label=label)
+                    if compare_with is None:
+                        ax.fill_between(
+                            plot[pax_type].index,
+                            plot[pax_type]["sum"],
+                            previous_plot["sum"],
+                            alpha=0.2,
+                        )
+                    previous_plot = plot[pax_type]
+            else:
+                ax.plot(plot, label=f"total show-up {year}")
 
         ax.legend(loc="upper left", frameon=False)
         plt.show()
 
-    def plot_std(self, compare_with=None, freq: str = "1H", win=1):
+    def plot_std(
+        self,
+        compare_with: Union["SimParam", list] = None,
+        freq: str = "1H",
+        win=1,
+    ):
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
         nb_bar = 1
         # to improve, we can write less confusing
@@ -515,19 +546,19 @@ class SimParam:
         self,
         airlines: str = ["total"],
         compare_with: Union["SimParam", list] = None,
+        legend: bool = True,
     ):
         if not (compare_with is None):
             if type(compare_with) != list:
                 list_simparam = [compare_with]
+            else:
+                list_simparam = compare_with.copy()
         else:
             list_simparam = []
 
         list_simparam.insert(0, self)
 
-        dct_simparam = {
-            simparam.schedule.loc[0, "Flight Date"].year: simparam
-            for simparam in list_simparam
-        }
+        dct_simparam = {idx: simparam for idx, simparam in enumerate(list_simparam)}
 
         colors = plt.rcParams["axes.prop_cycle"].by_key()["color"] * 20
         cols = airlines
@@ -555,9 +586,9 @@ class SimParam:
                             color=colors[idx],
                             alpha=0.2,
                         )
-
-        plt.legend(
-            ncol=1 + (len(cols) // 6),
-            bbox_to_anchor=(1.05, 1),
-        )
+        if legend:
+            plt.legend(
+                ncol=1 + (len(cols) // 6),
+                bbox_to_anchor=(1.05, 1),
+            )
         plt.show()

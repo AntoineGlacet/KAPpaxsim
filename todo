@@ -1,0 +1,4 @@
+- review simparam graph for compare_with and labels
+- simparam graph, legend and fill_between as option in func args
+
+- remove hard coding of list_process_all from Simulation

@@ -217,7 +217,7 @@ class Simulation:
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
 
         # list for iteration
-        list_process_all = ["kiosk", "checkin", "CUSBD", "security"]
+        list_process_all = ["kiosk", "checkin", "CUSBD"]
 
         # different types of columns
         datetime_columns_types = [
