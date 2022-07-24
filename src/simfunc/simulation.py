@@ -1,34 +1,17 @@
-# KIX_T1d_CUSBD_new.py
+# simulation.py
 
 import datetime
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tick
-import numpy as np
 import pandas as pd
 import seaborn as sns
 import simpy
 from tqdm import tqdm
 
 from src.utils.simparam import SimParam
-
-
-def minutes_to_hms(minutes):
-    """
-    transforms a number of minutes to a str of hms on 2020-10-13
-    for datetime formatting
-    """
-    if np.isnan(minutes):
-        hms = np.nan
-    else:
-        hms = (
-            "2020-10-13"
-            f" {int((minutes % 1440) // 60):0=2d}"
-            f":{int(minutes % 60):0=2d}"
-            f":{int((minutes % 1) * 60):0=2d}"
-        )
-    return hms
+from src.utils.utils import minutes_to_hms
 
 
 class CustomResource(simpy.PriorityResource):
