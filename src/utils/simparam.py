@@ -5,12 +5,40 @@ from pathlib import Path
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.ticker as tick
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from decouple import AutoConfig
 from scipy.interpolate import interp1d
 from scipy.stats import norm
+
+
+def day_graph():
+    """returns fig, ax with standard formatting"""
+    sns.set_theme(style="whitegrid")
+    # plot param
+    xmin = pd.to_datetime("2020-10-13 00:00:00")
+    xmax = pd.to_datetime("2020-10-14 00:00:00")
+    hours = mdates.HourLocator(interval=1)
+    half_hours = mdates.MinuteLocator(byminute=[0, 30], interval=1)
+    h_fmt = mdates.DateFormatter("%H:%M")
+    k_com = tick.FuncFormatter(lambda x, p: format(int(x), ","))
+
+    # formatting
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_xlim((xmin, xmax))
+    ax.set_xticks(pd.date_range(xmin, xmax, freq="30min"))
+    ax.set_xticklabels(ax.get_xticks(), rotation=45, **{"horizontalalignment": "right"})
+    ax.set(
+        ylabel="Pax/hr",
+    )
+    ax.xaxis.set_major_locator(hours)
+    ax.xaxis.set_major_formatter(h_fmt)
+    ax.xaxis.set_minor_locator(half_hours)
+    ax.yaxis.set_major_formatter(k_com)
+
+    return fig, ax
 
 
 class SimParam:
@@ -396,7 +424,6 @@ class SimParam:
         plt.show()
 
     def plot_df_Pax(self, by_pax_type: bool = False, freq: str = "5min", win=12):
-        sns.set_theme(style="whitegrid")
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
 
         if by_pax_type:
@@ -426,7 +453,7 @@ class SimParam:
                 .apply(lambda x: x * ratio_sampling)
             )
 
-        fig, ax = plt.subplots(figsize=(8, 5))
+        fig, ax = day_graph()
 
         if by_pax_type:
             previous_plot = plot[pax_types[0]] * 0
@@ -442,28 +469,11 @@ class SimParam:
         else:
             ax.plot(plot, label="total show-up")
 
-        # plot param
-        xmin = pd.to_datetime("2020-10-13 00:00:00")
-        xmax = pd.to_datetime("2020-10-14 00:00:00")
-        plt.rcParams.update({"figure.autolayout": True})
-        hours = mdates.HourLocator(interval=1)
-        half_hours = mdates.MinuteLocator(byminute=[0, 30], interval=1)
-        h_fmt = mdates.DateFormatter("%H:%M")
-
-        # formatting
-        ax.set_xlim((xmin, xmax))
-        ax.set_xticks(pd.date_range(xmin, xmax, freq="5min"))
-        ax.set_xticklabels(
-            ax.get_xticks(), rotation=45, **{"horizontalalignment": "right"}
-        )
-        ax.xaxis.set_major_locator(hours)
-        ax.xaxis.set_major_formatter(h_fmt)
-        ax.xaxis.set_minor_locator(half_hours)
         ax.legend(loc="upper left", frameon=False)
-
         plt.show()
 
     def plot_std(self, compare_with=None, freq: str = "1H", win=1):
+        ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
         nb_bar = 1
         # option to compare with other std_plot
         if not (compare_with is None):
@@ -480,29 +490,12 @@ class SimParam:
             for simparam in compare_with
         }
 
-        sns.set_theme(style="whitegrid")
+        fig, ax = day_graph()
         colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-        ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
 
         # plot param
-        xmin = pd.to_datetime("2020-10-13 00:00:00")
-        xmax = pd.to_datetime("2020-10-14 00:00:00")
-        hours = mdates.HourLocator(interval=1)
-        half_hours = mdates.MinuteLocator(byminute=[0, 30], interval=1)
-        h_fmt = mdates.DateFormatter("%H:%M")
-        width_hour = (xmax - xmin) / 24
+        width_hour = pd.Timedelta("0 days 01:00:00")
         width_bar = 0.7 * width_hour / nb_bar
-
-        # formatting
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.set_xlim((xmin, xmax))
-        ax.set_xticks(pd.date_range(xmin, xmax, freq="30min"))
-        ax.set_xticklabels(
-            ax.get_xticks(), rotation=45, **{"horizontalalignment": "right"}
-        )
-        ax.xaxis.set_major_locator(hours)
-        ax.xaxis.set_major_formatter(h_fmt)
-        ax.xaxis.set_minor_locator(half_hours)
 
         # calculation
         index = 0

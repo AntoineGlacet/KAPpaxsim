@@ -4,6 +4,7 @@ import datetime
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.ticker as tick
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -439,6 +440,9 @@ class Simulation:
             axs[i, 0].xaxis.set_major_locator(hours)
             axs[i, 0].xaxis.set_major_formatter(h_fmt)
             axs[i, 0].xaxis.set_minor_locator(half_hours)
+            axs[i, 0].yaxis.set_major_formatter(
+                tick.FuncFormatter(lambda x, p: format(int(x), ",")),
+            )
             axs[i, 0].legend(loc="upper left")
 
             axs[i, 1].set_xlim(left=0)
