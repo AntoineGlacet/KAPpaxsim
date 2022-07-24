@@ -16,7 +16,7 @@ repos:
     hooks:
     -   id: flake8
         args: ['--max-line-length=88','--extend-ignore=E203']
-        exclude: ^data/archive/
+        exclude: ^data/misc/
 # various checks
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0

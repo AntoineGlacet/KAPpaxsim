@@ -10,16 +10,18 @@ Project Organization
     ├── LICENSE
     ├── README.md               <- The top-level README for developers using this project.
     ├── data
-    │   ├── interim             <- Intermediate data that has been transformed. (not uploaded to github)
-    │   ├── processed           <- The final, canonical data sets for modeling. (not uploaded to github)
-    │   ├── raw                 <- The original, immutable data dump. (not uploaded to github)
+    │   ├── misc                <- Miscelaneous files to version control and share
+    │   ├── dump                <- Local dump directory
+    │   ├── interim             <- Intermediate data that has been transformed (not uploaded to github)
+    │   ├── processed           <- The final, canonical data sets for modeling (not uploaded to github)
+    │   ├── raw                 <- The original, immutable data (not uploaded to github)
     │   └── secret              <- Secret data like Sharepoint login (not uploaded to github)
     │       └── .env            <- File with local environment parameters
     │                               and passwords. Please ask separately (not uploaded to github)
     │
     ├── notebooks               <- Jupyter notebooks for analysis and report creation
-    │   ├── full                <- Including outputs (not uploaded to github)
-    │   └── stripped            <- Manually copied and stripped of outputs (uploaded to github)
+    │   ├── private             <- Not version controlled and shared
+    │   └── shared              <- Version controlled and shared (output stripped when pushed)
     │
     ├── reports                 <- Generated analysis as HTML, PDF, LaTeX, etc.
     │   └── figures             <- Generated graphics and figures to be used in reporting
@@ -62,10 +64,15 @@ pip install -e .
 Contribute
 ------------
 - Fork
-- Install pre-commit hooks
-`pre-commit install`
-- Install nb_stripout
-`nbstripout --install`
+- Install conda env and src (see [Prerequisite](#prerequisite))
+- Install [pre-commit](https://pre-commit.com/) hooks
+```
+pre-commit install
+```
+- Install [nb_stripout](https://github.com/kynan/nbstripout)
+```
+nbstripout --install
+```
 - Open pull request
 
 Remarks
