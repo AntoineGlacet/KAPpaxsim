@@ -164,7 +164,8 @@ class Simulation:
         # Create normal resources
         self.resources = {
             process_str: simpy.PriorityResource(
-                self.env, self.simparam.dct_resource[process_str]
+                self.env,
+                self.simparam.dct_resource[process_str],
             )
             for process_str in self.simparam.dct_resource
         }
@@ -179,7 +180,9 @@ class Simulation:
         list_airlines = self.simparam.schedule["Airline Code"].unique()
         self.checkin = {
             airline: CustomResource(
-                self.env, int(self.dct_Counters_change[airline][0]), airline=airline
+                self.env,
+                int(self.dct_Counters_change[airline][0]),
+                airline=airline,
             )
             for airline in list_airlines
         }
@@ -188,8 +191,8 @@ class Simulation:
         for airline in self.checkin:
             self.env.process(
                 self.checkin[airline].change_capa_per_schedule(
-                    self.dct_Counters_change[airline]
-                )
+                    self.dct_Counters_change[airline],
+                ),
             )
 
         return self
@@ -210,16 +213,20 @@ class Simulation:
                 runpbar.update(1)
 
     def format_df_result(
-        self, filter_airline: str = None, freq: str = "5min", win: int = 3
+        self,
+        filter_airline: str = None,
+        freq: str = "5min",
+        win: int = 3,
     ):
         # concatenate pax rows
         self.df_result = pd.concat(
-            [pax.row for pax in self.pax_list], axis=1
+            [pax.row for pax in self.pax_list],
+            axis=1,
         ).transpose()
 
         # add airline col
         self.df_result["Airline"] = self.df_result["Flight Number"].apply(
-            lambda x: x.split(" ", 1)[0]
+            lambda x: x.split(" ", 1)[0],
         )
 
         # sampling ratio
@@ -242,7 +249,7 @@ class Simulation:
         # change datetime columns to datetime
         for column in datetime_columns:
             self.df_result[column] = pd.to_datetime(
-                self.df_result[column].apply(lambda x: minutes_to_hms(x))
+                self.df_result[column].apply(lambda x: minutes_to_hms(x)),
             )
 
         # calculate waiting times
@@ -259,7 +266,7 @@ class Simulation:
             )
 
             self.df_result.loc[mask, f"wait_time_{process}"] = datetime.timedelta(
-                hours=8
+                hours=8,
             )
 
         # aggregates for plotting
@@ -400,7 +407,10 @@ class Simulation:
             axs[i, 0].plot(self.plt_in[i], label="in", lw=2)
             axs[i, 0].plot(self.plt_out[i], label="out", lw=2)
             axs[i, 0].plot(
-                self.plt_queue_length[i], label="queue length", ls="--", lw=1
+                self.plt_queue_length[i],
+                label="queue length",
+                ls="--",
+                lw=1,
             )
             ax2[i].plot(
                 self.plt_queue_duration[i],

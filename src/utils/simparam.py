@@ -41,7 +41,7 @@ class SimParam:
         mask_LCC = self.airline_code["FSC / LCC"] == "LCC"
         self.airline_code[mask_LCC]
         self.list_LCC = self.airline_code[mask_LCC]["airline code"].to_numpy(
-            dtype="str"
+            dtype="str",
         )
 
     def schedule_from_path(self, path: Path):
@@ -80,18 +80,22 @@ class SimParam:
             "Scheduled Time"
         ].astype(str)
         self.schedule["Scheduled Time"] = pd.to_datetime(
-            self.schedule["Scheduled Time"]
+            self.schedule["Scheduled Time"],
         )
         # to catch up some formatting mistakes from beontra extracts...
         self.schedule["Flight Number"] = self.schedule["Flight Number"].replace(
-            ["JX821"], "JX 821"
+            ["JX821"],
+            "JX 821",
         )
         self.schedule["Flight Number"] = self.schedule["Flight Number"].replace(
-            ["NS*****"], "NS *****"
+            ["NS*****"],
+            "NS *****",
         )
         # split Airline Code
         self.schedule["Airline Code"] = self.schedule["Flight Number"].str.split(
-            " ", 1, expand=True
+            " ",
+            1,
+            expand=True,
         )[0]
         # bad formatting of 0 pax flight I guess? for JAL 8126
         self.schedule["PAX_SUM FC"].replace("-", 0, inplace=True)
@@ -132,7 +136,7 @@ class SimParam:
         for i in range(len(self.schedule)):
             std = self.schedule.loc[i, "Scheduled Time"]
             if std < pd.to_datetime("2020-10-13 08:00:00") and std >= pd.to_datetime(
-                "2020-10-13 02:00:00"
+                "2020-10-13 02:00:00",
             ):
                 category = "EARLY"
 
@@ -165,10 +169,12 @@ class SimParam:
             - norm.cdf(
                 x,
                 loc=self.df_show_up_profiles.loc[
-                    self.df_show_up_profiles["name"] == name, "loc"
+                    self.df_show_up_profiles["name"] == name,
+                    "loc",
                 ].iat[0],
                 scale=self.df_show_up_profiles.loc[
-                    self.df_show_up_profiles["name"] == name, "scale"
+                    self.df_show_up_profiles["name"] == name,
+                    "scale",
                 ].iat[0],
             )
             for name in self.df_show_up_profiles["name"]
@@ -268,7 +274,7 @@ class SimParam:
         )
 
         self.df_Pax["Airline"] = self.df_Pax["Flight Number"].apply(
-            lambda x: x.split(" ", 1)[0]
+            lambda x: x.split(" ", 1)[0],
         )
 
         return self

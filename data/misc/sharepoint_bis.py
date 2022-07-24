@@ -28,7 +28,7 @@ def download_file(
     site: str = "FS",
     source_file_path: Path = Path(
         r"/sites/KansaiAirportsFileServer/Shared Documents/Other/Throughput videos/test"
-        r" folder/test.txt"
+        r" folder/test.txt",
     ),
     download_file_path: Path = Path(__file__).parent / "../data/dump/test.txt",
 ):
@@ -82,7 +82,7 @@ def get_items_in_directory(
     site: str = "FS",
     source_folder_path: Path = Path(
         r"/sites/KansaiAirportsFileServer/Shared Documents/Other/Throughput videos/test"
-        r" folder"
+        r" folder",
     ),
     recursive: bool = True,
 ):
@@ -134,7 +134,7 @@ def get_items_in_directory(
     ctx_client = login_sharepoint(site)
     contents = list()
     folders = ctx_client.web.get_folder_by_server_relative_url(
-        directory_relative_uri
+        directory_relative_uri,
     ).folders
     ctx_client.load(folders)
     ctx_client.execute_query()
@@ -146,13 +146,13 @@ def get_items_in_directory(
                     site=site,
                     source_folder_path=Path(folder.properties["ServerRelativeUrl"]),
                     recursive=recursive,
-                )
+                ),
             )
 
     # contents.extend(folders)
 
     files = ctx_client.web.get_folder_by_server_relative_url(
-        directory_relative_uri
+        directory_relative_uri,
     ).files
     ctx_client.load(files)
     ctx_client.execute_query()
@@ -166,7 +166,7 @@ def download_folder(
     site: str = "FS",
     source_folder_path: Path = Path(
         r"/sites/KansaiAirportsFileServer/Shared Documents/Other/Throughput videos/test"
-        r" folder"
+        r" folder",
     ),
     download_folder_path: Path = Path(__file__).parent / "../test",
     recursive: bool = True,
@@ -184,7 +184,7 @@ def download_folder(
     for file in files:
         source_file_path = Path(file.serverRelativeUrl)
         download_file_path = download_folder_path / source_file_path.relative_to(
-            source_folder_path
+            source_folder_path,
         )
 
         download_file(

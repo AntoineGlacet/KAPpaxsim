@@ -170,12 +170,14 @@ def KIX_T1d(
         def wait_opening(self, Pax):
             """wait for an openned counter"""
             opened_counters = data.loc[
-                int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
+                int(env.now / 5) % 288,
+                Pax.split("_")[2].split()[0],
             ]
             while opened_counters < 1:
                 yield self.env.timeout(5)
                 opened_counters = data.loc[
-                    int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
+                    int(env.now / 5) % 288,
+                    Pax.split("_")[2].split()[0],
                 ]
 
         def checkin_1step_counter(self, Pax):
@@ -184,12 +186,14 @@ def KIX_T1d(
             we should flag him as 'missed flight at check-in'
             right now we just let them wait until reopening."""
             opened_counters = data.loc[
-                int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
+                int(env.now / 5) % 288,
+                Pax.split("_")[2].split()[0],
             ]
             while opened_counters < 1:
                 yield self.env.timeout(5)
                 opened_counters = data.loc[
-                    int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
+                    int(env.now / 5) % 288,
+                    Pax.split("_")[2].split()[0],
                 ]
             test_time = Pt_checkin_1step_counter / opened_counters
             yield self.env.timeout(test_time)
@@ -198,7 +202,8 @@ def KIX_T1d(
             """dummy process to have the good processing time for each checkin operation
             """
             opened_counters = data.loc[
-                int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
+                int(env.now / 5) % 288,
+                Pax.split("_")[2].split()[0],
             ]
             test_time2 = Pt_checkin_1step_counter - (
                 Pt_checkin_1step_counter / opened_counters
@@ -210,12 +215,14 @@ def KIX_T1d(
         def checkin_2step_counter(self, Pax):
             """same as 1-step process but shorter"""
             opened_counters = data.loc[
-                int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
+                int(env.now / 5) % 288,
+                Pax.split("_")[2].split()[0],
             ]
             while opened_counters < 1:
                 yield self.env.timeout(5)
                 opened_counters = data.loc[
-                    int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
+                    int(env.now / 5) % 288,
+                    Pax.split("_")[2].split()[0],
                 ]
             test_time = Pt_checkin_2step_counter / opened_counters
             yield self.env.timeout(test_time)
@@ -224,7 +231,8 @@ def KIX_T1d(
             """dummy process to have the good processing time for each checkin operation
             """
             opened_counters = data.loc[
-                int(env.now / 5) % 288, Pax.split("_")[2].split()[0]
+                int(env.now / 5) % 288,
+                Pax.split("_")[2].split()[0],
             ]
             test_time3 = Pt_checkin_1step_counter - (
                 Pt_checkin_2step_counter / opened_counters
@@ -263,7 +271,8 @@ def KIX_T1d(
         # wait if counter is closed
         with dep.dummy_machine2.request() as request:
             df_result.loc[
-                index_Pax, "n_people_waiting_for_counter_opening"
+                index_Pax,
+                "n_people_waiting_for_counter_opening",
             ] = dep.dummy_machine2.count
             df_result.loc[index_Pax, "start_wait_for_counter_opening"] = env.now
             yield env.process(dep.wait_opening(name))
@@ -271,7 +280,7 @@ def KIX_T1d(
 
         with dep.checkin[index_airline].request(priority=2) as request:
             df_result.loc[index_Pax, "checkin_counter_queue_length"] = sum(
-                [len(dep.checkin[i].queue) for i in range(len(list_airlines))]
+                [len(dep.checkin[i].queue) for i in range(len(list_airlines))],
             )
             yield request
             df_result.loc[index_Pax, "end_checkin_counter_queue"] = env.now
@@ -284,7 +293,7 @@ def KIX_T1d(
 
         with dep.security_lanes.request(priority=2) as request:
             df_result.loc[index_Pax, "security_queue_length"] = len(
-                dep.security_lanes.queue
+                dep.security_lanes.queue,
             )
             df_result.loc[index_Pax, "start_security_queue"] = env.now
             yield request
@@ -294,7 +303,7 @@ def KIX_T1d(
 
         with dep.emigration_counter.request() as request:
             df_result.loc[index_Pax, "emigration_counter_queue_length"] = len(
-                dep.emigration_counter.queue
+                dep.emigration_counter.queue,
             )
             df_result.loc[index_Pax, "start_emigration_counter_queue"] = env.now
             yield request
@@ -313,7 +322,7 @@ def KIX_T1d(
 
         with dep.kiosk.request() as request:
             df_result.loc[index_Pax, "checkin_kiosk_queue_length"] = len(
-                dep.kiosk.queue
+                dep.kiosk.queue,
             )
             df_result.loc[index_Pax, "start_checkin_kiosk_queue"] = env.now
             yield request
@@ -324,7 +333,8 @@ def KIX_T1d(
         # wait if counter is closed
         with dep.dummy_machine2.request() as request:
             df_result.loc[
-                index_Pax, "n_people_waiting_for_counter_opening"
+                index_Pax,
+                "n_people_waiting_for_counter_opening",
             ] = dep.dummy_machine2.count
             df_result.loc[index_Pax, "start_wait_for_counter_opening"] = env.now
             yield env.process(dep.wait_opening(name))
@@ -332,7 +342,7 @@ def KIX_T1d(
 
         with dep.checkin[index_airline].request(priority=2) as request:
             df_result.loc[index_Pax, "checkin_counter_queue_length"] = sum(
-                [len(dep.checkin[i].queue) for i in range(len(list_airlines))]
+                [len(dep.checkin[i].queue) for i in range(len(list_airlines))],
             )
             yield request
             df_result.loc[index_Pax, "end_checkin_counter_queue"] = env.now
@@ -345,7 +355,7 @@ def KIX_T1d(
 
         with dep.security_lanes.request(priority=2) as request:
             df_result.loc[index_Pax, "security_queue_length"] = len(
-                dep.security_lanes.queue
+                dep.security_lanes.queue,
             )
             df_result.loc[index_Pax, "start_security_queue"] = env.now
             yield request
@@ -355,7 +365,7 @@ def KIX_T1d(
 
         with dep.emigration_self.request() as request:
             df_result.loc[index_Pax, "emigration_self_queue_length"] = len(
-                dep.emigration_self.queue
+                dep.emigration_self.queue,
             )
             df_result.loc[index_Pax, "start_emigration_self_queue"] = env.now
             yield request
@@ -374,7 +384,7 @@ def KIX_T1d(
 
         with dep.kiosk.request() as request:
             df_result.loc[index_Pax, "checkin_kiosk_queue_length"] = len(
-                dep.kiosk.queue
+                dep.kiosk.queue,
             )
             df_result.loc[index_Pax, "start_checkin_kiosk_queue"] = env.now
             yield request
@@ -385,7 +395,8 @@ def KIX_T1d(
         # wait if counter is closed
         with dep.dummy_machine2.request() as request:
             df_result.loc[
-                index_Pax, "n_people_waiting_for_counter_opening"
+                index_Pax,
+                "n_people_waiting_for_counter_opening",
             ] = dep.dummy_machine2.count
             df_result.loc[index_Pax, "start_wait_for_counter_opening"] = env.now
             yield env.process(dep.wait_opening(name))
@@ -393,7 +404,7 @@ def KIX_T1d(
 
         with dep.checkin[index_airline].request(priority=2) as request:
             df_result.loc[index_Pax, "checkin_counter_queue_length"] = sum(
-                [len(dep.checkin[i].queue) for i in range(len(list_airlines))]
+                [len(dep.checkin[i].queue) for i in range(len(list_airlines))],
             )
             yield request
             df_result.loc[index_Pax, "end_checkin_counter_queue"] = env.now
@@ -406,7 +417,7 @@ def KIX_T1d(
 
         with dep.security_lanes.request(priority=2) as request:
             df_result.loc[index_Pax, "security_queue_length"] = len(
-                dep.security_lanes.queue
+                dep.security_lanes.queue,
             )
             df_result.loc[index_Pax, "start_security_queue"] = env.now
             yield request
@@ -416,7 +427,7 @@ def KIX_T1d(
 
         with dep.emigration_self.request() as request:
             df_result.loc[index_Pax, "emigration_self_queue_length"] = len(
-                dep.emigration_self.queue
+                dep.emigration_self.queue,
             )
             df_result.loc[index_Pax, "start_emigration_self_queue"] = env.now
             yield request
@@ -436,7 +447,8 @@ def KIX_T1d(
         # wait if counter is closed
         with dep.dummy_machine2.request() as request:
             df_result.loc[
-                index_Pax, "n_people_waiting_for_counter_opening"
+                index_Pax,
+                "n_people_waiting_for_counter_opening",
             ] = dep.dummy_machine2.count
             df_result.loc[index_Pax, "start_wait_for_counter_opening"] = env.now
             yield env.process(dep.wait_opening(name))
@@ -444,7 +456,7 @@ def KIX_T1d(
 
         with dep.checkin[index_airline].request(priority=1) as request:
             df_result.loc[index_Pax, "checkin_counter_queue_length"] = sum(
-                [len(dep.checkin[i].queue) for i in range(len(list_airlines))]
+                [len(dep.checkin[i].queue) for i in range(len(list_airlines))],
             )
             yield request
             df_result.loc[index_Pax, "end_checkin_counter_queue"] = env.now
@@ -457,7 +469,7 @@ def KIX_T1d(
 
         with dep.security_lanes.request(priority=1) as request:
             df_result.loc[index_Pax, "security_queue_length"] = len(
-                dep.security_lanes.queue
+                dep.security_lanes.queue,
             )
             df_result.loc[index_Pax, "start_security_queue"] = env.now
             yield request
@@ -467,7 +479,7 @@ def KIX_T1d(
 
         with dep.emigration_counter.request() as request:
             df_result.loc[index_Pax, "emigration_counter_queue_length"] = len(
-                dep.emigration_counter.queue
+                dep.emigration_counter.queue,
             )
             df_result.loc[index_Pax, "start_emigration_counter_queue"] = env.now
             yield request
@@ -495,7 +507,7 @@ def KIX_T1d(
                 env,
                 f"pax_{index_total}_{flight}_traditional",
                 departure,
-            )
+            ),
         )
 
         # Create the other Paxes
@@ -504,7 +516,7 @@ def KIX_T1d(
 
             yield env.timeout(
                 df_Pax_flight["minutes"][index_vol]
-                - df_Pax_flight["minutes"][index_vol - 1]
+                - df_Pax_flight["minutes"][index_vol - 1],
             )
             # generate different types of Pax
             # first, randomly generate the list of index for each type of Pax
@@ -547,7 +559,7 @@ def KIX_T1d(
                         env,
                         f"pax_{index_total}_{flight}_modern",
                         departure,
-                    )
+                    ),
                 )
             elif index_vol in digital_pax_list:
                 env.process(
@@ -555,7 +567,7 @@ def KIX_T1d(
                         env,
                         f"pax_{index_total}_{flight}_digital",
                         departure,
-                    )
+                    ),
                 )
             elif index_vol in premium_pax_list:
                 env.process(
@@ -563,7 +575,7 @@ def KIX_T1d(
                         env,
                         f"pax_{index_total}_{flight}_premium",
                         departure,
-                    )
+                    ),
                 )
             else:
                 env.process(
@@ -571,7 +583,7 @@ def KIX_T1d(
                         env,
                         f"pax_{index_total}_{flight}_traditional",
                         departure,
-                    )
+                    ),
                 )
 
     # Create dataframe of results
@@ -693,7 +705,7 @@ def KIX_T1d(
 
     for column in list_minutes_columns:
         df_result[column] = pd.to_datetime(
-            df_result[column].apply(lambda x: minutes_to_hms(x))
+            df_result[column].apply(lambda x: minutes_to_hms(x)),
         )
 
     # add "Pax_N"
@@ -866,7 +878,7 @@ def KIX_T1d(
     plt_hist_wait_time = [
         (
             df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][3]].apply(
-                lambda x: x.total_seconds() / 60
+                lambda x: x.total_seconds() / 60,
             )
         )
         for key in [*dct_plot]
@@ -875,7 +887,7 @@ def KIX_T1d(
     dct_hist_wait_time = {
         key: (
             df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][3]].apply(
-                lambda x: x.total_seconds() / 60
+                lambda x: x.total_seconds() / 60,
             )
         )
         for key in [*dct_plot]
@@ -1046,7 +1058,7 @@ def KIX_T1d(
             heapq.nlargest(
                 int(len(list_kpi_queue_length[i]) / 99) + 1,
                 list_kpi_queue_length[i],
-            )
+            ),
         )
         for i in range(n_graph)
     ]
@@ -1055,7 +1067,7 @@ def KIX_T1d(
             heapq.nlargest(
                 int(len(list_kpi_wait_time[i]) / 99) + 1,
                 list_kpi_wait_time[i],
-            )
+            ),
         )
         for i in range(n_graph)
     ]

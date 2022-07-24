@@ -159,7 +159,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.quarantine.request(priority=2) as request:
             df_result.loc[index_Pax, "quarantine_queue_length"] = len(
-                arr.quarantine.queue
+                arr.quarantine.queue,
             )
             df_result.loc[index_Pax, "start_quarantine_queue"] = env.now
             yield request
@@ -169,7 +169,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.immigration_counter.request() as request:
             df_result.loc[index_Pax, "immigration_counter_queue_length"] = len(
-                arr.immigration_counter.queue
+                arr.immigration_counter.queue,
             )
             df_result.loc[index_Pax, "start_immigration_counter_queue"] = env.now
             yield request
@@ -188,7 +188,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.customs_counter.request() as request:
             df_result.loc[index_Pax, "customs_counter_queue_length"] = len(
-                arr.customs_counter.queue
+                arr.customs_counter.queue,
             )
             df_result.loc[index_Pax, "start_customs_counter_queue"] = env.now
             yield request
@@ -209,7 +209,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.quarantine.request(priority=2) as request:
             df_result.loc[index_Pax, "quarantine_queue_length"] = len(
-                arr.quarantine.queue
+                arr.quarantine.queue,
             )
             df_result.loc[index_Pax, "start_quarantine_queue"] = env.now
             yield request
@@ -219,7 +219,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.immigration_self.request() as request:
             df_result.loc[index_Pax, "immigration_self_queue_length"] = len(
-                arr.immigration_self.queue
+                arr.immigration_self.queue,
             )
             df_result.loc[index_Pax, "start_immigration_self_queue"] = env.now
             yield request
@@ -238,7 +238,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.customs_counter.request() as request:
             df_result.loc[index_Pax, "customs_counter_queue_length"] = len(
-                arr.customs_counter.queue
+                arr.customs_counter.queue,
             )
             df_result.loc[index_Pax, "start_customs_counter_queue"] = env.now
             yield request
@@ -259,7 +259,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.quarantine.request(priority=2) as request:
             df_result.loc[index_Pax, "quarantine_queue_length"] = len(
-                arr.quarantine.queue
+                arr.quarantine.queue,
             )
             df_result.loc[index_Pax, "start_quarantine_queue"] = env.now
             yield request
@@ -269,7 +269,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.immigration_self.request() as request:
             df_result.loc[index_Pax, "immigration_self_queue_length"] = len(
-                arr.immigration_self.queue
+                arr.immigration_self.queue,
             )
             df_result.loc[index_Pax, "start_immigration_self_queue"] = env.now
             yield request
@@ -288,7 +288,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.customs_self.request() as request:
             df_result.loc[index_Pax, "customs_self_queue_length"] = len(
-                arr.customs_self.queue
+                arr.customs_self.queue,
             )
             df_result.loc[index_Pax, "start_customs_self_queue"] = env.now
             yield request
@@ -309,7 +309,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.quarantine.request(priority=2) as request:
             df_result.loc[index_Pax, "quarantine_queue_length"] = len(
-                arr.quarantine.queue
+                arr.quarantine.queue,
             )
             df_result.loc[index_Pax, "start_quarantine_queue"] = env.now
             yield request
@@ -319,7 +319,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.immigration_counter.request() as request:
             df_result.loc[index_Pax, "immigration_counter_queue_length"] = len(
-                arr.immigration_counter.queue
+                arr.immigration_counter.queue,
             )
             df_result.loc[index_Pax, "start_immigration_counter_queue"] = env.now
             yield request
@@ -329,7 +329,7 @@ def KIX_T2_arrival_sim_function(
 
         with arr.customs_counter.request() as request:
             df_result.loc[index_Pax, "customs_counter_queue_length"] = len(
-                arr.customs_counter.queue
+                arr.customs_counter.queue,
             )
             df_result.loc[index_Pax, "start_customs_counter_queue"] = env.now
             yield request
@@ -359,7 +359,7 @@ def KIX_T2_arrival_sim_function(
                 env,
                 f"pax_{index_total}_{flight}_traditional",
                 arrival,
-            )
+            ),
         )
 
         # Create the other Paxes
@@ -368,7 +368,7 @@ def KIX_T2_arrival_sim_function(
 
             yield env.timeout(
                 df_Pax_flight["minutes"][index_vol]
-                - df_Pax_flight["minutes"][index_vol - 1]
+                - df_Pax_flight["minutes"][index_vol - 1],
             )
             # generate different types of Pax
             # first, randomly generate the list of index for each type of Pax
@@ -412,7 +412,7 @@ def KIX_T2_arrival_sim_function(
                         env,
                         f"pax_{index_total}_{flight}_modern",
                         arrival,
-                    )
+                    ),
                 )
             elif index_vol in digital_pax_list:
                 env.process(
@@ -420,7 +420,7 @@ def KIX_T2_arrival_sim_function(
                         env,
                         f"pax_{index_total}_{flight}_digital",
                         arrival,
-                    )
+                    ),
                 )
             elif index_vol in no_bag_pax_list:
                 env.process(
@@ -428,7 +428,7 @@ def KIX_T2_arrival_sim_function(
                         env,
                         f"pax_{index_total}_{flight}_no_bag",
                         arrival,
-                    )
+                    ),
                 )
             else:
                 env.process(
@@ -436,7 +436,7 @@ def KIX_T2_arrival_sim_function(
                         env,
                         f"pax_{index_total}_{flight}_traditional",
                         arrival,
-                    )
+                    ),
                 )
 
     # Create dataframe of results
@@ -552,7 +552,7 @@ def KIX_T2_arrival_sim_function(
 
     for column in list_minutes_columns:
         df_result[column] = pd.to_datetime(
-            df_result[column].apply(lambda x: minutes_to_hms(x))
+            df_result[column].apply(lambda x: minutes_to_hms(x)),
         )
 
     # add "Pax_N"
@@ -578,13 +578,13 @@ def KIX_T2_arrival_sim_function(
     # 2 fake guys to prevent bug
     if all(pd.isnull(df_result["start_customs_self_queue"])):
         df_result.loc[0:1, "start_customs_self_queue"] = pd.to_datetime(
-            "2020-10-13 00:00:01"
+            "2020-10-13 00:00:01",
         )
         df_result.loc[0:1, "end_customs_self_queue"] = pd.to_datetime(
-            "2020-10-13 00:00:01"
+            "2020-10-13 00:00:01",
         )
         df_result.loc[0:1, "end_customs_self_process"] = pd.to_datetime(
-            "2020-10-13 00:00:01"
+            "2020-10-13 00:00:01",
         )
         df_result.loc[0:1, "customs_self_queue_length"] = 0
 
@@ -678,7 +678,7 @@ def KIX_T2_arrival_sim_function(
             .apply(lambda x: x * ratio_sampling)
         )
         if not all(
-            pd.isnull(df_result.set_index(dct_plot[key][0], drop=False)["Pax_N"].index)
+            pd.isnull(df_result.set_index(dct_plot[key][0], drop=False)["Pax_N"].index),
         )
         else (
             df_result.set_index(dct_plot[key][0], drop=False)["Pax_N"]
@@ -735,7 +735,7 @@ def KIX_T2_arrival_sim_function(
     plt_hist_wait_time = [
         (
             df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][3]].apply(
-                lambda x: x.total_seconds() / 60
+                lambda x: x.total_seconds() / 60,
             )
         )
         for key in [*dct_plot]
@@ -744,7 +744,7 @@ def KIX_T2_arrival_sim_function(
     dct_hist_wait_time = {
         key: (
             df_result[df_result[dct_plot[key][0]].notnull()][dct_plot[key][3]].apply(
-                lambda x: x.total_seconds() / 60
+                lambda x: x.total_seconds() / 60,
             )
         )
         for key in [*dct_plot]
@@ -890,7 +890,7 @@ def KIX_T2_arrival_sim_function(
             heapq.nlargest(
                 max(int(len(list_kpi_queue_length[i]) / 99), 1),
                 list_kpi_queue_length[i],
-            )
+            ),
         )
         for i in range(n_graph)
     ]
@@ -899,7 +899,7 @@ def KIX_T2_arrival_sim_function(
             heapq.nlargest(
                 max(int(len(list_kpi_wait_time[i]) / 99), 1),
                 list_kpi_wait_time[i],
-            )
+            ),
         )
         for i in range(n_graph)
     ]

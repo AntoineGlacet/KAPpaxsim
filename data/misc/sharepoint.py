@@ -41,7 +41,7 @@ def get_schedule_forecast_FY19_25():
     with open(download_path, "wb") as local_file:
         file = (
             ctx.web.get_file_by_server_relative_path(
-                config("schedule_forecast_FY19_25_url")
+                config("schedule_forecast_FY19_25_url"),
             )
             .download(local_file)
             .execute_query()
@@ -59,7 +59,7 @@ def get_T1_ren_6kPax_schedule():
     with open(download_path, "wb") as local_file:
         file = (
             ctx.web.get_file_by_server_relative_path(
-                config("T1_ren_6kPax_schedule_url")
+                config("T1_ren_6kPax_schedule_url"),
             )
             .download(local_file)
             .execute_query()

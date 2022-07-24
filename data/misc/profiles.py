@@ -100,7 +100,11 @@ def show_up_function(
 
     # fonction pour renvoyer les peak_hour
     def peak_hour(
-        FY=2025, direction="D", weekday="Saturday", sector="I", terminal="T1"
+        FY=2025,
+        direction="D",
+        weekday="Saturday",
+        sector="I",
+        terminal="T1",
     ):
         filtered_data = data[
             (
@@ -241,10 +245,10 @@ def show_up_function(
         df_Counters_previous_day = df_Counters.copy()
         df_Counters_next_day = df_Counters.copy()
         df_Counters_previous_day = df_Counters_previous_day.reindex(
-            index=[f"day-1 {i}" for i in range(0, 288)]
+            index=[f"day-1 {i}" for i in range(0, 288)],
         )
         df_Counters_next_day = df_Counters_next_day.reindex(
-            index=[f"day+1 {i}" for i in range(0, 288)]
+            index=[f"day+1 {i}" for i in range(0, 288)],
         )
 
         df1 = df_Counters_previous_day
@@ -353,15 +357,15 @@ def show_up_function(
             N_flight_pax = int(
                 filtered_data.loc[i, "PAX_SUM FC"]
                 * ratio
-                * (target_peak / schedule_peak)
+                * (target_peak / schedule_peak),
             )
             STD = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
 
             if filtered_data.loc[i, "Scheduled Time"] < pd.to_datetime(
-                "2020-10-13 08:00:00"
+                "2020-10-13 08:00:00",
             ) and filtered_data.loc[i, "Scheduled Time"] >= pd.to_datetime(
-                "2020-10-13 02:00:00"
+                "2020-10-13 02:00:00",
             ):
                 temps_Terminal = (
                     filtered_data.loc[i, "Scheduled Time"].hour * 60
@@ -464,15 +468,15 @@ def show_up_function(
             N_flight_pax = int(
                 filtered_data.loc[i, "PAX_SUM FC"]
                 * ratio
-                * (target_peak / schedule_peak)
+                * (target_peak / schedule_peak),
             )
             STD = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
 
             if filtered_data.loc[i, "Scheduled Time"] < pd.to_datetime(
-                "2020-10-13 08:00:00"
+                "2020-10-13 08:00:00",
             ) and filtered_data.loc[i, "Scheduled Time"] >= pd.to_datetime(
-                "2020-10-13 02:00:00"
+                "2020-10-13 02:00:00",
             ):
                 temps_Security = (
                     filtered_data.loc[i, "Scheduled Time"].hour * 60
@@ -481,9 +485,9 @@ def show_up_function(
                 )
 
             elif filtered_data.loc[i, "Scheduled Time"] < pd.to_datetime(
-                "2020-10-13 12:00:00"
+                "2020-10-13 12:00:00",
             ) and filtered_data.loc[i, "Scheduled Time"] >= pd.to_datetime(
-                "2020-10-13 08:00:00"
+                "2020-10-13 08:00:00",
             ):
                 temps_Security = (
                     filtered_data.loc[i, "Scheduled Time"].hour * 60
@@ -561,7 +565,7 @@ def show_up_function(
             N_flight_pax = int(
                 filtered_data.loc[i, "PAX_SUM FC"]
                 * ratio
-                * (target_peak / schedule_peak)
+                * (target_peak / schedule_peak),
             )
             STD = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
@@ -606,19 +610,23 @@ def show_up_function(
         x = show_up_boarding["time before STD"].to_numpy(dtype=float)
 
         y_boarding_C = show_up_boarding["cumulative distribution code C"].to_numpy(
-            dtype=float
+            dtype=float,
         )
         y_boarding_E = show_up_boarding["cumulative distribution code E"].to_numpy(
-            dtype=float
+            dtype=float,
         )
         f_boarding_C = interp1d(x, y_boarding_C, kind="linear")
         f_boarding_E = interp1d(x, y_boarding_E, kind="linear")
 
         f_boarding_C_inv_linear = interp1d(
-            f_boarding_C(x)[0:10], x[0:10], kind="linear"
+            f_boarding_C(x)[0:10],
+            x[0:10],
+            kind="linear",
         )
         f_boarding_E_inv_linear = interp1d(
-            f_boarding_E(x)[0:12], x[0:12], kind="linear"
+            f_boarding_E(x)[0:12],
+            x[0:12],
+            kind="linear",
         )
 
         # let's allocate profiles to flight and apply the ratios to Pax
@@ -629,7 +637,7 @@ def show_up_function(
             N_flight_pax = int(
                 filtered_data.loc[i, "PAX_SUM FC"]
                 * ratio
-                * (target_peak / schedule_peak)
+                * (target_peak / schedule_peak),
             )
             STD = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
@@ -686,7 +694,7 @@ def show_up_function(
             N_flight_pax = int(
                 filtered_data.loc[i, "PAX_SUM FC"]
                 * ratio
-                * (target_peak / schedule_peak)
+                * (target_peak / schedule_peak),
             )
             STA = filtered_data.loc[i, "Scheduled Time"]
             y = np.linspace(0.0001, 0.995, N_flight_pax)
@@ -810,7 +818,7 @@ def generate_dep_Pax_Counters(
             df_Counters = df_Counters.applymap(lambda x: no_more_than_10(x))
             df_Counters["MM"] = df_Counters["MM"].apply(lambda x: if_open_10(x))
             df_Counters["total"] = df_Counters.drop(labels=["total"], axis=1).sum(
-                axis=1
+                axis=1,
             )
 
     return df_Pax, df_Counters

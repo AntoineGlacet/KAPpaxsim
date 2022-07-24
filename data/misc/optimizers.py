@@ -173,14 +173,18 @@ def custmin(
     )
 
     return OptimizeResult(
-        fun=besty, x=bestx, nit=niter, nfev=funcalls, success=(niter >= 1)
+        fun=besty,
+        x=bestx,
+        nit=niter,
+        nfev=funcalls,
+        success=(niter >= 1),
     )
 
 
 def custcallback(error=None, x=None, nit=None, nfev=None, stepsize=None, fev_list=None):
     print(
         "iteration #{}:   x={}   error={}  function evaluated {} times step taken: {}"
-        .format(nit, x, error, nfev, stepsize)
+        .format(nit, x, error, nfev, stepsize),
     )
     x_plot = [fev[0] for fev in fev_list]
     y_plot = [fev[1] for fev in fev_list]
