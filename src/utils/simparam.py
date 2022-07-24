@@ -2,6 +2,7 @@
 
 import datetime
 from pathlib import Path
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -510,28 +511,50 @@ class SimParam:
         plt.legend()
         plt.show()
 
-    def plot_counters(self, airlines: str = ["total"]):
+    def plot_counters(
+        self,
+        airlines: str = ["total"],
+        compare_with: Union["SimParam", list] = None,
+    ):
+        if not (compare_with is None):
+            if type(compare_with) != list:
+                list_simparam = [compare_with]
+        else:
+            list_simparam = []
+
+        list_simparam.insert(0, self)
+
+        dct_simparam = {
+            simparam.schedule.loc[0, "Flight Date"].year: simparam
+            for simparam in list_simparam
+        }
+
         colors = plt.rcParams["axes.prop_cycle"].by_key()["color"] * 20
         cols = airlines
-        df = self.df_Counters.copy()
-        df.index = [
-            pd.to_datetime(minutes_to_hms(5 * x)) for x in self.df_Counters.index
-        ]
         fig, ax = day_graph()
-        for idx, col in enumerate(cols):
-            if idx == 0:
-                ax.step(df.index, df[col], label=col)
-                ax.fill_between(df.index, df[col], color=colors[idx], alpha=0.2)
-            else:
-                bottom = df[cols[0:idx]].sum(axis=1)
-                ax.step(df.index, df[col] + bottom, label=col)
-                ax.fill_between(
-                    df.index,
-                    df[col] + bottom,
-                    bottom,
-                    color=colors[idx],
-                    alpha=0.2,
-                )
+        ax.set(ylabel="counter")
+        for year, simparam in dct_simparam.items():
+            df = simparam.df_Counters.copy()
+            df.index = [
+                pd.to_datetime(minutes_to_hms(5 * x)) for x in self.df_Counters.index
+            ]
+            for idx, col in enumerate(cols):
+                label = f"{year}_{col}" if not (compare_with is None) else col
+                if idx == 0:
+                    ax.step(df.index, df[col], label=label)
+                    if compare_with is None:
+                        ax.fill_between(df.index, df[col], color=colors[idx], alpha=0.2)
+                else:
+                    bottom = df[cols[0:idx]].sum(axis=1)
+                    ax.step(df.index, df[col] + bottom, label=label)
+                    if compare_with is None:
+                        ax.fill_between(
+                            df.index,
+                            df[col] + bottom,
+                            bottom,
+                            color=colors[idx],
+                            alpha=0.2,
+                        )
 
         plt.legend(
             ncol=1 + (len(cols) // 6),
