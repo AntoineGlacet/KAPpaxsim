@@ -21,11 +21,11 @@ def minutes_to_hms(minutes):
     if np.isnan(minutes):
         hms = np.nan
     else:
-        hms = "{0:s} {1:0=2d}:{2:0=2d}:{3:0=2d}".format(
-            "2020-10-13",
-            int((minutes % 1440) // 60),
-            int(minutes % 60),
-            int((minutes % 1) * 60),
+        hms = (
+            "2020-10-13"
+            f" {int((minutes % 1440) // 60):0=2d}"
+            f":{int(minutes % 60):0=2d}"
+            f":{int((minutes % 1) * 60):0=2d}"
         )
     return hms
 
