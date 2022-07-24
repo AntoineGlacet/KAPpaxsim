@@ -13,6 +13,8 @@ from decouple import AutoConfig
 from scipy.interpolate import interp1d
 from scipy.stats import norm
 
+from src.simfunc.simulation import minutes_to_hms
+
 
 def day_graph():
     """returns fig, ax with standard formatting"""
@@ -475,6 +477,7 @@ class SimParam:
     def plot_std(self, compare_with=None, freq: str = "1H", win=1):
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
         nb_bar = 1
+        # to improve, we can write less confusing
         # option to compare with other std_plot
         if not (compare_with is None):
             if type(compare_with) != list:
@@ -536,4 +539,31 @@ class SimParam:
         plt.legend()
         plt.show()
 
-        return self
+    def plot_counters(self, airlines: str = ["total"]):
+        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"] * 20
+        cols = airlines
+        df = self.df_Counters.copy()
+        df.index = [
+            pd.to_datetime(minutes_to_hms(5 * x)) for x in self.df_Counters.index
+        ]
+        fig, ax = day_graph()
+        for idx, col in enumerate(cols):
+            if idx == 0:
+                ax.step(df.index, df[col], label=col)
+                ax.fill_between(df.index, df[col], color=colors[idx], alpha=0.2)
+            else:
+                bottom = df[cols[0:idx]].sum(axis=1)
+                ax.step(df.index, df[col] + bottom, label=col)
+                ax.fill_between(
+                    df.index,
+                    df[col] + bottom,
+                    bottom,
+                    color=colors[idx],
+                    alpha=0.2,
+                )
+
+        plt.legend(
+            ncol=1 + (len(cols) // 6),
+            bbox_to_anchor=(1.05, 1),
+        )
+        plt.show()
