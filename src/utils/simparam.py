@@ -473,6 +473,13 @@ class SimParam:
         else:
             compare_with = []
 
+        compare_with.insert(0, self)
+
+        dct_simparam = {
+            simparam.schedule.loc[0, "Flight Date"].year: simparam
+            for simparam in compare_with
+        }
+
         sns.set_theme(style="whitegrid")
         colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
         ratio_sampling = pd.to_timedelta("1H") / pd.to_timedelta(freq)
@@ -498,39 +505,42 @@ class SimParam:
         ax.xaxis.set_minor_locator(half_hours)
 
         # calculation
-        plot = (
-            self.schedule.set_index("Scheduled Time", drop=False)["PAX_SUM FC"]
-            .resample(freq)
-            .agg(["sum"])
-            .rolling(window=win, center=True)
-            .mean()
-            .dropna()
-            .apply(lambda x: x * ratio_sampling)
-        )
+        index = 0
+        for label, simparam in dct_simparam.items():
+            plot = (
+                simparam.schedule.set_index("Scheduled Time", drop=False)["PAX_SUM FC"]
+                .resample(freq)
+                .agg(["sum"])
+                .rolling(window=win, center=True)
+                .mean()
+                .dropna()
+                .apply(lambda x: x * ratio_sampling)
+            )
 
-        compare_with.append(plot)
-
-        # plot
-        for index, ploti in enumerate(compare_with):
+            # plot
             interval = width_hour / (nb_bar + 1)
-            x = ploti.index + (1 + index) * interval
+            x = plot.index + (1 + index) * interval
             width = width_bar
             ax.bar(
                 x=x,
-                height=ploti["sum"],
+                height=plot["sum"],
                 width=width,
                 align="center",
                 color=colors[index],
+                label=label,
             )
             ax.text(
                 0.15,
                 0.95 - index * 0.05,
-                f"total = {ploti['sum'].sum():,} Pax",
+                f"total = {plot['sum'].sum():,} Pax",
                 horizontalalignment="center",
                 verticalalignment="center",
                 transform=ax.transAxes,
                 color=colors[index],
             )
+            index += 1
+
+        plt.legend()
         plt.show()
 
-        return plot
+        return self
