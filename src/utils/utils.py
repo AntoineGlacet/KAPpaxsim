@@ -27,6 +27,17 @@ def minutes_to_hms(minutes):
 def day_graph():
     """returns fig, ax with standard formatting"""
     sns.set_theme(style="whitegrid")
+
+    # # little geek stuff to change font... useless but fun
+    # fpath = (
+    #     "/home/antoine/projects/KAPpaxsim/data/dump/Caskaydia Cove Regular Nerd Font"
+    #     " Complete Mono.otf"
+    # )
+    # fm.fontManager.addfont(fpath)
+    # fp = fm.FontProperties(fname=fpath)
+    # rcParams["font.family"] = "sans-serif"
+    # rcParams["font.sans-serif"] = fp.get_name()
+
     # plot param
     xmin = pd.to_datetime("2020-10-13 00:00:00")
     xmax = pd.to_datetime("2020-10-14 00:00:00")
